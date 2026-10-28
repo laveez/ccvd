@@ -409,6 +409,14 @@ select {
   word-break: break-word;
 }
 
+.no-diff .panes {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.no-diff .pane.diff {
+  display: none;
+}
+
 /* Overlays */
 
 .overlay {
@@ -457,7 +465,8 @@ select {
 }
 
 @media (max-width: 900px) {
-  .panes {
+  .panes,
+  .no-diff .panes {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(240px, 1fr);
     overflow: auto;

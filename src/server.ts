@@ -258,6 +258,7 @@ export function parseClientMessage(text: string): ClientMessage | undefined {
         : undefined;
     case 'linked':
     case 'reducedMotion':
+    case 'diff':
       return typeof value.value === 'boolean' ? (value as unknown as ClientMessage) : undefined;
     default:
       return undefined;

@@ -62,6 +62,7 @@ export class Session extends EventEmitter<SessionEvents> {
   size: ViewSize;
   fit: boolean;
   linked = true;
+  diffVisible = true;
   reducedMotion: boolean;
   latest: Capture | undefined;
   readonly exactFrames = new Map<Channel, [FrameHeader, Buffer]>();
@@ -156,6 +157,9 @@ export class Session extends EventEmitter<SessionEvents> {
         break;
       case 'reducedMotion':
         this.run(this.setReducedMotion(message.value));
+        break;
+      case 'diff':
+        this.diffVisible = message.value;
         break;
     }
   }
@@ -322,7 +326,7 @@ export class Session extends EventEmitter<SessionEvents> {
     if (!this.dirtySince) return;
     const now = Date.now();
     const quiet = now - this.lastFrameAt >= QUIET_MS;
-    const overdue = now - this.dirtySince >= MAX_STALE_MS;
+    const overdue = this.diffVisible && now - this.dirtySince >= MAX_STALE_MS;
     if (!this.capturing && (quiet || overdue)) void this.capture();
     else this.schedule();
   }

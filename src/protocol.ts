@@ -50,8 +50,9 @@ export interface SizeRequest extends ViewSize {
   fit: boolean;
 }
 
+// diff: whether a viewer shows the diff pane; without it, ccvd skips forced captures of animating pages.
 export interface ToggleRequest {
-  type: 'linked' | 'reducedMotion';
+  type: 'linked' | 'reducedMotion' | 'diff';
   value: boolean;
 }
 

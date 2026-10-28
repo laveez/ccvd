@@ -82,6 +82,7 @@ ccvd <before> <after>
 | **Scrolling** | Always in sync: the side you scroll leads, the other follows to the same offset |
 | **Path field, back, forward, reload** | Navigate both sides together |
 | **Size** | *Fit to pane*, or a preset from desktop 1920×1080 down to small phone 390×844, at 1x or 2x |
+| **Diff** | Shows or hides the diff pane. Hidden, the two pages share the width and ccvd stops its regular captures of pages that keep animating. Your browser remembers the choice |
 | **Reduced motion** | Renders both sides with `prefers-reduced-motion: reduce`, so animated pages hold still. ccvd suggests it when a page keeps animating |
 | **Before + After, Before + Diff + After** | Open the current view as one image in a new tab, or download it |
 

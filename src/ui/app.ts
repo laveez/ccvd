@@ -68,6 +68,7 @@ const ui = {
   dpr: [...document.querySelectorAll<HTMLButtonElement>('[data-dpr]')],
   linked: element<HTMLInputElement>('#linked'),
   motion: element<HTMLInputElement>('#motion'),
+  diff: element<HTMLInputElement>('#diff'),
   hint: element('#hint'),
   exports: [...document.querySelectorAll<HTMLButtonElement>('[data-layout]')],
   diffDetail: element('.diff .detail'),
@@ -122,6 +123,7 @@ function onMessage(message: ServerMessage): void {
   renderState(message);
   if (firstState) {
     firstState = false;
+    send({ type: 'diff', value: ui.diff.checked });
     if (message.fit) sendFit(window.devicePixelRatio >= 1.5 ? 2 : 1);
   }
 }
@@ -253,6 +255,13 @@ function wireToolbar(): void {
     });
   }
   ui.linked.addEventListener('change', () => send({ type: 'linked', value: ui.linked.checked }));
+  ui.diff.checked = readSetting('ccvd.diff') !== 'hidden';
+  showDiff(ui.diff.checked);
+  ui.diff.addEventListener('change', () => {
+    showDiff(ui.diff.checked);
+    writeSetting('ccvd.diff', ui.diff.checked ? 'shown' : 'hidden');
+    send({ type: 'diff', value: ui.diff.checked });
+  });
   ui.motion.addEventListener('change', () => send({ type: 'reducedMotion', value: ui.motion.checked }));
   for (const button of ui.exports) {
     button.addEventListener('click', () =>
@@ -406,4 +415,23 @@ function showToast(text: string): void {
   toastTimer = window.setTimeout(() => {
     ui.toast.hidden = true;
   }, 5000);
+}
+
+function showDiff(visible: boolean): void {
+  document.body.classList.toggle('no-diff', !visible);
+}
+
+// Storage can be unavailable (private windows, blocked site data); the defaults then apply.
+function readSetting(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSetting(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
 }
