@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <title>ccvd</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="brand">
+        <img src="/favicon.svg" alt="" width="22" height="22">
+        <span>ccvd</span>
+      </div>
+
+      <div class="group nav">
+        <button type="button" class="icon" id="back" title="Back" aria-label="Back">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button type="button" class="icon" id="forward" title="Forward" aria-label="Forward">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button type="button" class="icon" id="reload" title="Reload both" aria-label="Reload both">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4v4.5h-4.5"/></svg>
+        </button>
+      </div>
+
+      <form class="address" id="go">
+        <input id="path" spellcheck="false" autocomplete="off" aria-label="Path to open on both sides" placeholder="/path">
+      </form>
+
+      <div class="group">
+        <select id="size" aria-label="Page size"></select>
+        <fieldset class="segmented">
+          <legend class="visually-hidden">Pixel ratio</legend>
+          <button type="button" data-dpr="1" title="1 device pixel per CSS pixel">1x</button>
+          <button type="button" data-dpr="2" title="2 device pixels per CSS pixel">2x</button>
+        </fieldset>
+      </div>
+
+      <div class="group toggles">
+        <label class="switch" title="Mirror clicks, typing and links to both sides">
+          <input type="checkbox" id="linked"><span class="track"></span><span>Linked</span>
+        </label>
+        <label class="switch" title="Render both sides with prefers-reduced-motion: reduce">
+          <input type="checkbox" id="motion"><span class="track"></span><span>Reduced motion</span>
+        </label>
+        <span class="hint" id="hint" hidden>Keeps animating: try Reduced motion</span>
+      </div>
+
+      <div class="group exports">
+        <div class="split" title="Before and after side by side">
+          <button type="button" data-layout="pair" data-mode="open" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            Before + After
+          </button>
+          <button type="button" class="icon" data-layout="pair" data-mode="download" aria-label="Download before and after" title="Download" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+          </button>
+        </div>
+        <div class="split" title="Before, diff and after side by side">
+          <button type="button" data-layout="triple" data-mode="open" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            Before + Diff + After
+          </button>
+          <button type="button" class="icon" data-layout="triple" data-mode="download" aria-label="Download before, diff and after" title="Download" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="panes">
+      <section class="pane" data-channel="before">
+        <header>
+          <strong>Before</strong>
+          <span class="host"></span>
+          <span class="status"></span>
+        </header>
+        <!-- biome-ignore lint/a11y/noNoninteractiveTabindex: the view takes keyboard input for the page it shows -->
+        <div class="view" role="application" tabindex="0" aria-label="Before page">
+          <canvas></canvas>
+          <p class="message" hidden></p>
+        </div>
+      </section>
+      <section class="pane diff" data-channel="diff">
+        <header>
+          <strong>Diff</strong>
+          <span class="detail">Waiting for both sides</span>
+          <span class="spinner" hidden></span>
+        </header>
+        <!-- biome-ignore lint/a11y/noNoninteractiveTabindex: the view takes keyboard input for the page it shows -->
+        <div class="view" role="application" tabindex="0" aria-label="Diff, scrolls and clicks like the before page">
+          <canvas></canvas>
+          <p class="message" hidden></p>
+        </div>
+      </section>
+      <section class="pane" data-channel="after">
+        <header>
+          <strong>After</strong>
+          <span class="host"></span>
+          <span class="status"></span>
+        </header>
+        <!-- biome-ignore lint/a11y/noNoninteractiveTabindex: the view takes keyboard input for the page it shows -->
+        <div class="view" role="application" tabindex="0" aria-label="After page">
+          <canvas></canvas>
+          <p class="message" hidden></p>
+        </div>
+      </section>
+    </main>
+
+    <div class="overlay" id="overlay" hidden>
+      <div>
+        <h2>ccvd</h2>
+        <p>Connecting</p>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status" hidden></div>
+  </body>
+</html>
