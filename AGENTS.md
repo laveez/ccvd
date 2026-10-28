@@ -34,7 +34,8 @@ Read CONTRIBUTING.md for setup, the project layout and the commit format. This f
 
 ## Tests
 
-- `test/unit` covers the PNG codec, the diff, addresses, sizes and argument parsing. `test/e2e` drives real Chromium against `examples/demo`.
+- `test/unit` covers the PNG codec, the diff, addresses, sizes and argument parsing. `test/e2e` drives real Chromium against `examples/demo` and the calibration pages in `test/baselines`, whose expected counts and regions are in `test/baselines/cases.ts`.
+- After a change to capturing or to the diff image, run `npm run baselines` and look at every redrawn image before committing it. In cases with exact counts only shapes may change, since changed text draws differently from machine to machine.
 - In live tests, the side the user last touched (the before side until then) sets the scroll offset for as long as the session runs. Scrolling that page directly moves the other side too, and the other side scrolled on its own is put back, up to five times. Scroll the leading side, or send wheel input through the session.
 - Navigate with a fresh query string when the page is already open, so that waiting for its path also waits for the reload.
 

@@ -1,0 +1,61 @@
+/* Every element sits at a fixed position and size, so the expected diffs do not depend on fonts. */
+body {
+  position: relative;
+  width: 480px;
+  height: 300px;
+  margin: 0;
+  background: #ffffff;
+  color: #1f2933;
+  font: 16px / 24px sans-serif;
+}
+
+body > *,
+main > * {
+  position: absolute;
+  margin: 0;
+  overflow: hidden;
+}
+
+header {
+  top: 0;
+  left: 0;
+  width: 464px;
+  height: 40px;
+  padding-left: 16px;
+  background: #1f2933;
+  color: #ffffff;
+  font-weight: bold;
+  line-height: 40px;
+}
+
+main {
+  top: 40px;
+  left: 0;
+  width: 480px;
+  height: 260px;
+}
+
+h1 {
+  top: 16px;
+  left: 16px;
+  width: 448px;
+  height: 32px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+p {
+  top: 52px;
+  left: 16px;
+  width: 448px;
+  height: 24px;
+  color: #52606d;
+}
+
+.box {
+  top: 100px;
+  left: 140px;
+  width: 200px;
+  height: 100px;
+  background: #3b82f6;
+}

@@ -38,6 +38,8 @@ node dist/bin/ccvd.js demo
 
 The end-to-end tests start a real Chromium. They use Playwright's Chromium when it is installed and Google Chrome otherwise.
 
+`test/e2e/baselines.test.ts` checks ccvd against the calibration pages in `test/baselines`. After a change to capturing or to the diff image, redraw their images with `npm run baselines` and look at each one before committing.
+
 ## Project layout
 
 | Path | What it holds |
@@ -53,6 +55,7 @@ The end-to-end tests start a real Chromium. They use Playwright's Chromium when 
 | `src/png.ts`, `src/diff.ts`, `src/compose.ts` | PNG reading and writing, the pixel diff, composite images |
 | `plugins/ccvd/`, `.claude-plugin/` | The Claude Code plugin, its skill and the marketplace entry |
 | `examples/demo/` | The demo site, in a before and an after version |
+| `test/baselines/` | Calibration pages with known diffs, their reference images and expectations (`cases.ts`) |
 
 ## Code style
 

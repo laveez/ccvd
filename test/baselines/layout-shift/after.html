@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>ccvd baseline: layout shift</title>
+    <link rel="stylesheet" href="../baseline.css">
+    <style>
+      body {
+        height: 340px;
+      }
+
+      .banner {
+        top: 40px;
+        left: 0;
+        width: 464px;
+        height: 40px;
+        padding-left: 16px;
+        background: #fef3c7;
+        color: #92400e;
+        line-height: 40px;
+      }
+
+      main {
+        top: 80px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>ccvd baseline</header>
+    <div class="banner">Tickets on sale now</div>
+    <main>
+      <h1>Layout shift</h1>
+      <p>A banner above the content pushes everything down.</p>
+      <div class="box"></div>
+    </main>
+  </body>
+</html>
