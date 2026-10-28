@@ -17,7 +17,15 @@ const EDGE: Candidate = { label: 'Microsoft Edge', options: { channel: 'msedge' 
 export async function launchBrowser(choice?: string, settings: LaunchSettings = {}): Promise<Browser> {
   const candidates = choice ? [chosen(choice)] : [BUNDLED, CHROME, EDGE];
   const signals = settings.handleSignals ?? true;
-  const base: LaunchOptions = { headless: true, handleSIGINT: signals, handleSIGTERM: signals, handleSIGHUP: signals };
+  const base: LaunchOptions = {
+    headless: true,
+    handleSIGINT: signals,
+    handleSIGTERM: signals,
+    handleSIGHUP: signals,
+    // Smooth and threaded scrolling move the picture on the compositor ahead of what the page's main
+    // thread reports, so a capture could catch one side mid-scroll while both offsets look equal.
+    args: ['--disable-smooth-scrolling', '--disable-threaded-scrolling'],
+  };
   const failures: string[] = [];
   for (const candidate of candidates) {
     try {

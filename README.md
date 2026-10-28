@@ -79,14 +79,14 @@ ccvd <before> <after>
 |---|---|
 | **Before, Diff, After** | The two pages, and the diff between them: changed pixels red, the rest of the before page faded |
 | **Linked** | Mirrors clicks, typing and links to both sides. Off, only the side you use gets the input |
-| **Scrolling** | Always in sync: the side you scroll leads, the other follows to the same offset |
+| **Scrolling** | Always in sync: the side you scroll leads, the other follows to the same offset and is put back if it drifts |
 | **Path field, back, forward, reload** | Navigate both sides together |
 | **Size** | *Fit to pane*, or a preset from desktop 1920×1080 down to small phone 390×844, at 1x or 2x |
 | **Diff** | Shows or hides the diff pane. Hidden, the two pages share the width and ccvd stops its regular captures of pages that keep animating. Your browser remembers the choice |
 | **Reduced motion** | Renders both sides with `prefers-reduced-motion: reduce`, so animated pages hold still. ccvd suggests it when a page keeps animating |
 | **Before + After, Before + Diff + After** | Open the current view as one image in a new tab, or download it |
 
-The panes stream while pages move. Once both sides are still, ccvd takes lossless captures, diffs them, and the diff pane shows the changed-pixel count.
+The panes stream while pages move, and the diff pane marks its image as out of date. Once both sides are still, ccvd takes lossless captures, diffs them, and the diff pane shows the changed-pixel count.
 
 ---
 
@@ -167,8 +167,8 @@ flowchart LR
 
 - **One engine for both sides.** Both pages render in the same Chromium, each in its own browser context, at the same size and pixel ratio. Equal pages give equal pixels, so the diff has no noise to filter: any red is a real change.
 - **Exact diff.** A pixel counts as changed when any of its RGBA bytes differ. Changed pixels are pure red, as in [roborazzi](https://github.com/takahirom/roborazzi); unchanged ones show the before page faded toward white. Where only one page has content, the area counts as changed.
-- **Live, then exact.** While pages move, the panes show Chromium's screencast. When both sides stop changing for 150 ms, or every 750 ms on a page that keeps animating, ccvd captures both as PNG, decodes and diffs them in Node, and streams the exact images and the diff.
-- **Input.** Mouse, wheel and keys from the view go to the pages as Chromium input events. The side you touched leads for a moment: its window scroll moves the other side, and while linked its clicks, keys and link navigations happen on both.
+- **Live, then exact.** While pages move, the panes show Chromium's screencast. When both sides stop changing for 150 ms, and after a scroll once both report the same offset, ccvd captures both as PNG, decodes and diffs them in Node, and streams the exact images and the diff. A page that keeps animating is captured every 750 ms at first, backing off to every 4 s, and never while you scroll, click or type. Exact images replace the streamed ones only when no newer frame arrived during the capture, so the panes never jump back.
+- **Input.** Mouse, wheel and keys from the view go to the pages as Chromium input events. The side you last touched sets the scroll offset: its window scroll moves the other side, which is put back if it drifts on its own. The hidden browser scrolls without smooth or threaded scrolling, so a page's reported offset matches what it draws. While linked, the touched side's clicks, keys and link navigations happen on both.
 
 ---
 

@@ -112,6 +112,54 @@ test('a page or its iframes cannot run code in the other side through scroll rep
   await until(async () => (await afterY()) === 1234, 'the after side to follow a real report');
 });
 
+test('scrolling either side keeps two identical pages pixel-identical', { timeout: 60_000 }, async () => {
+  const bands = Array.from(
+    { length: 40 },
+    (_, i) => `<div style="height:120px;background:hsl(${i * 9} 60% 70%)">row ${i}</div>`,
+  );
+  const pages = await site({
+    'index.html': `<body style="margin:0;font:20px sans-serif">${bands.join('')}<script>addEventListener('scroll', () => { document.body.dataset.y = scrollY; });</script></body>`,
+  });
+  const compared = await session({ before: pages.url, after: pages.url });
+  compared.attach();
+  try {
+    await loaded(compared);
+    const offsets = async () =>
+      JSON.stringify(await Promise.all([compared.before.scrollPosition(), compared.after.scrollPosition()]));
+    for (const [side, deltaY] of [
+      ['before', 300],
+      ['after', -120],
+      ['diff', 700],
+      ['after', 260],
+    ] as const) {
+      compared.handle({
+        type: 'mouse',
+        side,
+        action: 'move',
+        x: 300,
+        y: 200,
+        button: 'none',
+        buttons: 0,
+        clickCount: 0,
+        modifiers: 0,
+      });
+      for (let step = 0; step < 3; step++) {
+        compared.handle({ type: 'wheel', side, x: 300, y: 200, deltaX: 0, deltaY: deltaY / 3, modifiers: 0 });
+        await pause(16);
+      }
+      await until(async () => {
+        const [before, after] = JSON.parse(await offsets());
+        return before[1] === after[1] && before[1] > 0;
+      }, `equal offsets after scrolling ${side}`);
+    }
+    await pause(500);
+    const capture = await compared.currentCapture();
+    assert.equal(capture?.diff.changed, 0, `offsets ${await offsets()}`);
+  } finally {
+    compared.detach();
+  }
+});
+
 test('each side keeps the address it was given', { timeout: 30_000 }, async () => {
   const pages = await site({ 'index.html': '<p>variants</p>' });
   const compared = await session({

@@ -90,7 +90,7 @@ export async function startServer({ session, browser, port }: ServerOptions): Pr
   }
 
   async function sendExport(url: URL, response: http.ServerResponse): Promise<void> {
-    const capture = session.latest;
+    const capture = await session.currentCapture();
     if (!capture) return refuse(response, 503, 'Nothing captured yet');
     const layout = url.searchParams.get('layout') === 'pair' ? 'pair' : 'triple';
     const before: Panel = { label: 'Before', detail: capture.beforePath, image: capture.before };

@@ -98,6 +98,9 @@ export interface FrameHeader {
   exact: boolean;
   width: number;
   height: number;
+  // Live frames count up per side. A diff is current when no live frame arrived while it was captured.
+  seq?: number;
+  current?: boolean;
   capture?: number;
   changed?: number;
   total?: number;

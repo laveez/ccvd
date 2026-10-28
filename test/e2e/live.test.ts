@@ -172,7 +172,11 @@ test('streams both sides and an exact diff', { timeout: 30_000 }, async () => {
       'an exact diff',
     );
     assert.ok((diff.header.changed ?? 0) > 0, 'the demo sides differ');
-    const exactBefore = client.frames.find(frame => frame.header.channel === 'before' && frame.header.exact);
+    // Exact frames reach the panes once the pages hold still, so they can come after the first diff.
+    const exactBefore = await until(
+      () => client.frames.find(frame => frame.header.channel === 'before' && frame.header.exact),
+      'an exact before frame',
+    );
     const image = decodePng(exactBefore?.bytes ?? Buffer.alloc(0));
     assert.deepEqual([image.width, image.height], [800, 600]);
     assert.equal(client.state?.size.width, 800);

@@ -17,6 +17,7 @@ Read CONTRIBUTING.md for setup, the project layout and the commit format. This f
 - **Exports are pixel copies.** `compose.ts` copies captures into the composite in Node; only the label strips come from the browser.
 - **Security checks stay.** The server binds `127.0.0.1`; the WebSocket and `/export.png` need the token; requests need an allowed `Host`, the WebSocket an allowed `Origin`; pages navigate to http(s) only; `parseClientMessage` validates every message from the UI. Do not loosen any of these.
 - **Pages send data, never code.** The scroll binding accepts only finite numbers from a page's main frame (any frame can call it), and values reach the other page as `evaluate` arguments, never pasted into source.
+- **Offsets match the picture.** The hidden browser runs without smooth and threaded scrolling, and captures after a scroll wait until both sides report the same offset; otherwise a capture can catch one side mid-scroll. Keep the flags in `src/browser.ts`.
 - **Only user navigations are followed.** A navigation is mirrored to the other side only when the user started it on the leading side; ccvd's own navigations (path field, back, forward, reload, following) never are, so differing redirects or addresses cannot bounce the sides.
 - **Versions move together.** `package.json`, `plugins/ccvd/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and every `@laveez/ccvd@<version>` in `plugins/ccvd/skills/ccvd/SKILL.md`. Use `npm run set-version -- <version>`; `npm run versions` checks them.
 - **`src/protocol.ts` is shared** by the server build and the UI build. Keep it types only: the UI is served as a single module, `dist/ui/app.js`, and cannot import runtime values from other files.
@@ -32,7 +33,7 @@ Read CONTRIBUTING.md for setup, the project layout and the commit format. This f
 ## Tests
 
 - `test/unit` covers the PNG codec, the diff, addresses, sizes and argument parsing. `test/e2e` drives real Chromium against `examples/demo`.
-- In live tests, a side the user touched leads scrolling for 1.5 seconds. A test that scrolls pages directly within that window will see the other side follow. Focus or scroll both pages explicitly, or wait for the window to pass.
+- In live tests, the side the user last touched (the before side until then) sets the scroll offset for as long as the session runs. Scrolling that page directly moves the other side too, and the other side scrolled on its own is put back, up to five times. Scroll the leading side, or send wheel input through the session.
 - Navigate with a fresh query string when the page is already open, so that waiting for its path also waits for the reload.
 
 ## Pull requests

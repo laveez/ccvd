@@ -5,30 +5,30 @@ export const SCROLL_BINDING = '__ccvdScroll';
 // Full-page captures stop at this height, so endless feeds end and images stay within memory.
 export const MAX_FULL_PAGE_CSS_PX = 16_384;
 
-// Reports window scroll once per frame, and skips the report for a scroll ccvd applied itself so the
-// two sides do not echo each other's positions back and forth.
+// Reports window scroll once per frame. `known` is the last offset ccvd has, from a report or from
+// applying the other side's, so neither ccvd's own scrolls nor a repeated offset report again.
 export const PAGE_SCRIPT = `(() => {
   if (window.top !== window || window.__ccvdApplyScroll) return;
-  let applied = null;
+  let known = null;
   let pending = 0;
   window.__ccvdApplyScroll = (x, y) => {
-    applied = [x, y];
+    known = [x, y];
     window.scrollTo({ left: x, top: y, behavior: 'instant' });
   };
   addEventListener('scroll', () => {
     if (pending) return;
     pending = requestAnimationFrame(() => {
       pending = 0;
-      const x = Math.round(window.scrollX);
-      const y = Math.round(window.scrollY);
-      const echo = applied && applied[0] === x && applied[1] === y;
-      applied = null;
-      if (!echo && window.${SCROLL_BINDING}) window.${SCROLL_BINDING}(x, y);
+      const x = window.scrollX;
+      const y = window.scrollY;
+      if (known && Math.abs(known[0] - x) < 0.5 && Math.abs(known[1] - y) < 0.5) return;
+      known = [x, y];
+      if (window.${SCROLL_BINDING}) window.${SCROLL_BINDING}(x, y);
     });
   }, { passive: true });
 })();`;
 
-export const SCROLL_POSITION = '[Math.round(window.scrollX), Math.round(window.scrollY)]';
+export const SCROLL_POSITION = '[window.scrollX, window.scrollY]';
 
 // Finished animations jump to their end state and endless ones go back to their start, as
 // Playwright's screenshot option animations: 'disabled' does; media stops so frames match.
@@ -56,5 +56,12 @@ export const STEP_THROUGH = `(async () => {
   }
   window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
 })()`;
+
+// Pages that update scroll effects only for some scroll events (throttled handlers) can end the
+// same scroll in different states on the two sides; one more event at the final offset evens them out.
+export const REFRESH_SCROLL_EFFECTS = `new Promise(resolve => {
+  document.dispatchEvent(new Event('scroll', { bubbles: true }));
+  requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)));
+})`;
 
 export const FONTS_READY = 'document.fonts ? document.fonts.ready.then(() => true) : true';

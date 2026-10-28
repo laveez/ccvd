@@ -155,7 +155,7 @@ async function onFrame(buffer: ArrayBuffer): Promise<void> {
 }
 
 function onDiff(header: FrameHeader): void {
-  setStale(false);
+  setStale(header.current === false);
   const changed = header.changed ?? 0;
   const total = header.total ?? 1;
   ui.diffDetail.textContent =

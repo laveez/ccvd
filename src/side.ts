@@ -5,6 +5,7 @@ import {
   FREEZE,
   MAX_FULL_PAGE_CSS_PX,
   PAGE_SCRIPT,
+  REFRESH_SCROLL_EFFECTS,
   SCROLL_BINDING,
   SCROLL_POSITION,
   STEP_THROUGH,
@@ -77,7 +78,7 @@ export class Side extends EventEmitter<SideEvents> {
     await context.exposeBinding(SCROLL_BINDING, (source, x: unknown, y: unknown) => {
       if (!side || source.page !== side.page || source.frame !== side.page.mainFrame()) return;
       if (!isScroll(x) || !isScroll(y)) return;
-      side.emit('scroll', { x: Math.round(x), y: Math.round(y) });
+      side.emit('scroll', { x, y });
     });
     await context.addInitScript(PAGE_SCRIPT);
     const page = await context.newPage();
@@ -91,7 +92,7 @@ export class Side extends EventEmitter<SideEvents> {
   async startScreencast(): Promise<void> {
     if (this.screencasting) return;
     this.screencasting = true;
-    await this.cdp.send('Page.startScreencast', { format: 'jpeg', quality: 80 });
+    await this.cdp.send('Page.startScreencast', { format: 'jpeg', quality: 90 });
   }
 
   async stopScreencast(): Promise<void> {
@@ -159,6 +160,10 @@ export class Side extends EventEmitter<SideEvents> {
     await this.page
       .evaluate(([left, top]) => (globalThis as PageWithScroll).__ccvdApplyScroll?.(left, top), [x, y] as const)
       .catch(() => {});
+  }
+
+  async refreshScrollEffects(): Promise<void> {
+    await withTimeout(this.page.evaluate(REFRESH_SCROLL_EFFECTS), 1000, 'Refreshing scroll effects').catch(() => {});
   }
 
   async scrollPosition(): Promise<[number, number]> {
