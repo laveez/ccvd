@@ -77,7 +77,7 @@ async function save(browser: Browser, out: string, name: string, captured: Captu
   const [beforeSide, beforeImage] = captured.before;
   const [afterSide, afterImage] = captured.after;
   const diff = diffImages(beforeImage, afterImage);
-  const file = (kind: string) => path.join(out, `${name}-${kind}.png`);
+  const file = (kind: string) => path.resolve(out, `${name}-${kind}.png`);
   const panels: Record<'before' | 'diff' | 'after', Panel> = {
     before: { label: 'Before', detail: beforeSide.state.path, image: beforeImage },
     diff: {
@@ -148,9 +148,9 @@ export function formatResults(results: ShotResult[], out: string): string {
     `  ${row[0].padEnd(widths[0])}  ${row[1].padEnd(widths[1])}  ${row[2]}${row[3] ? `  (${row[3]})` : ''}`.trimEnd(),
   );
   return [
-    `ccvd shot: ${results.length} comparison${results.length === 1 ? '' : 's'} saved to ${out}`,
+    `ccvd shot: ${results.length} comparison${results.length === 1 ? '' : 's'} saved to ${path.resolve(out)}`,
     ...lines,
     '',
-    `Each comparison has -before, -after, -diff, -pair and -triple PNGs in ${out}.`,
+    `Each comparison has -before, -after, -diff, -pair and -triple PNGs in ${path.resolve(out)}.`,
   ].join('\n');
 }
