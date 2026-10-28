@@ -22,8 +22,8 @@
     "test:unit": "node --test 'test/unit/*.test.ts'",
     "test:e2e": "node --test 'test/e2e/*.test.ts'",
     "versions": "node scripts/check-versions.ts",
+    "set-version": "node scripts/set-version.ts",
     "check": "npm run lint && npm run typecheck && npm run versions && npm run build && npm test",
-    "demo": "node scripts/demo.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

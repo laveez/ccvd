@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ccvd",
+  "description": "ccvd, Claude Code Visual Diff: compare two versions of a site with an exact pixel diff",
+  "owner": {
+    "name": "laveez",
+    "url": "https://github.com/laveez"
+  },
+  "plugins": [
+    {
+      "name": "ccvd",
+      "description": "Compare two versions of a site side by side with an exact pixel diff: a live view for you, and before, diff and after images for pull requests",
+      "version": "0.1.0",
+      "author": {
+        "name": "laveez",
+        "url": "https://github.com/laveez"
+      },
+      "source": "./plugins/ccvd",
+      "category": "development",
+      "homepage": "https://github.com/laveez/ccvd",
+      "license": "MIT"
+    }
+  ]
+}
