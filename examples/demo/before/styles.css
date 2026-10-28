@@ -105,7 +105,7 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
-  padding: 72px 0;
+  padding-block: 72px;
 }
 
 .card {
@@ -188,7 +188,7 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
-  padding: 24px 0 88px;
+  padding-block: 24px 88px;
 }
 
 .plan {
