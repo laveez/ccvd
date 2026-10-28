@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+echo "Running npm run check before push..."
+npm run --silent check || {
+  echo "ERROR: npm run check failed. Fix it, or push with --no-verify if you really must." >&2
+  exit 1
+}

@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in ccvd does not work as described
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The ccvd command you ran. Replace private addresses with placeholders.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or screenshot
+      description: Terminal output, and a screenshot of the live view if the problem is visual.
+  - type: input
+    id: version
+    attributes:
+      label: ccvd version
+      description: Output of `npx ccvd --version`.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Node.js version (`node --version`) and the browser ccvd used (Playwright Chromium, Chrome or Edge).
+    validations:
+      required: true

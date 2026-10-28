@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+
+      - name: Check the tag matches the package version
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "v${VERSION}" != "${TAG_NAME}" ]; then
+            echo "Tag ${TAG_NAME} does not match package.json version ${VERSION}" >&2
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run versions
+      - run: npm run build
+      - run: npm publish --provenance --access public
+
+      - name: Draft release notes
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 --match 'v*' "${TAG_NAME}^" 2>/dev/null || true)
+          RANGE="${PREV_TAG:+${PREV_TAG}..}${TAG_NAME}"
+          features=$(git log --format='%s' "$RANGE" | sed -n 's/^Feature: /- /p')
+          fixes=$(git log --format='%s' "$RANGE" | sed -n 's/^Fix: /- /p')
+          : > release-notes.md
+          if [ -n "$features" ]; then printf '### Features\n\n%s\n\n' "$features" >> release-notes.md; fi
+          if [ -n "$fixes" ]; then printf '### Fixes\n\n%s\n\n' "$fixes" >> release-notes.md; fi
+          if [ ! -s release-notes.md ]; then echo "Maintenance release." > release-notes.md; fi
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: gh release create "$TAG_NAME" --verify-tag --draft --title "$TAG_NAME" --notes-file release-notes.md
