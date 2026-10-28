@@ -54,7 +54,7 @@ jobs:
             npm publish --provenance --access public
           fi
 
-      - name: Draft release notes
+      - name: Write the release notes
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
@@ -67,8 +67,14 @@ jobs:
           if [ -n "$fixes" ]; then printf '### Fixes\n\n%s\n\n' "$fixes" >> release-notes.md; fi
           if [ ! -s release-notes.md ]; then echo "Maintenance release." > release-notes.md; fi
 
-      - name: Create draft release
+      - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
-        run: gh release create "$TAG_NAME" --verify-tag --draft --title "$TAG_NAME" --notes-file release-notes.md
+        run: |
+          # A rerun finds the release from an earlier attempt and publishes it, keeping its notes.
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            gh release edit "$TAG_NAME" --draft=false
+          else
+            gh release create "$TAG_NAME" --verify-tag --title "$TAG_NAME" --notes-file release-notes.md
+          fi

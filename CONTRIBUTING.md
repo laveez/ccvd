@@ -73,7 +73,7 @@ The end-to-end tests start a real Chromium. They use Playwright's Chromium when 
 - <Detail 2>
 ```
 
-Types: `Feature`, `Fix`, `Refactor`, `Docs`, `Test`, `Chore`. Release notes are drafted from the `Feature:` and `Fix:` subjects, so write those for users.
+Types: `Feature`, `Fix`, `Refactor`, `Docs`, `Test`, `Chore`. The GitHub release notes list the `Feature:` and `Fix:` subjects, so write those for users.
 
 ## Pull requests
 
@@ -90,4 +90,4 @@ Maintainers release from `main`:
 2. Commit it as `Chore: Release 0.2.0` and get it onto `main`.
 3. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
 
-The Release workflow runs CI on the tag, checks the tag against `package.json`, publishes to npm with provenance and drafts the GitHub release notes for review.
+The Release workflow runs CI on the tag, checks the tag against `package.json`, publishes to npm with provenance and publishes the GitHub release, with notes listing the `Feature:` and `Fix:` subjects since the previous tag.
