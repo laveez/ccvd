@@ -1,6 +1,6 @@
 {
   "name": "ccvd",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Compare two versions of a site side by side with an exact pixel diff: a live view for you, and before, diff and after images for pull requests",
   "author": {
     "name": "laveez",

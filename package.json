@@ -1,6 +1,6 @@
 {
   "name": "@laveez/ccvd",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Claude Code Visual Diff: browse two versions of a site side by side with a live, exact pixel diff between them",
   "type": "module",
   "author": "laveez",
