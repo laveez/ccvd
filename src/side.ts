@@ -92,7 +92,15 @@ export class Side extends EventEmitter<SideEvents> {
   async startScreencast(): Promise<void> {
     if (this.screencasting) return;
     this.screencasting = true;
-    await this.cdp.send('Page.startScreencast', { format: 'jpeg', quality: 90 });
+    // By default Chromium drops frames made while three are unacknowledged, so the last position of
+    // a scroll could stay unsent. One frame in flight with the newest one kept also stops it from
+    // encoding frames that would only queue up behind each other.
+    await this.cdp.send('Page.startScreencast', {
+      format: 'jpeg',
+      quality: 90,
+      maxFramesInFlight: 1,
+      sendLastFrame: true,
+    });
   }
 
   async stopScreencast(): Promise<void> {

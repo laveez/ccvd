@@ -18,6 +18,7 @@ Read CONTRIBUTING.md for setup, the project layout and the commit format. This f
 - **Security checks stay.** The server binds `127.0.0.1`; the WebSocket and `/export.png` need the token; requests need an allowed `Host`, the WebSocket an allowed `Origin`; pages navigate to http(s) only; `parseClientMessage` validates every message from the UI. Do not loosen any of these.
 - **Pages send data, never code.** The scroll binding accepts only finite numbers from a page's main frame (any frame can call it), and values reach the other page as `evaluate` arguments, never pasted into source.
 - **Offsets match the picture.** The hidden browser runs without smooth and threaded scrolling, and captures after a scroll wait until both sides report the same offset; otherwise a capture can catch one side mid-scroll. Keep the flags in `src/browser.ts`.
+- **The newest frame always arrives.** The screencast runs with one frame in flight and `sendLastFrame`. Chromium's default drops frames made while acks are pending, which can leave a pane on an old position.
 - **Only user navigations are followed.** A navigation is mirrored to the other side only when the user started it on the leading side; ccvd's own navigations (path field, back, forward, reload, following) never are, so differing redirects or addresses cannot bounce the sides.
 - **Versions move together.** `package.json`, `plugins/ccvd/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and every `@laveez/ccvd@<version>` in `plugins/ccvd/skills/ccvd/SKILL.md`. Use `npm run set-version -- <version>`; `npm run versions` checks them.
 - **`src/protocol.ts` is shared** by the server build and the UI build. Keep it types only: the UI is served as a single module, `dist/ui/app.js`, and cannot import runtime values from other files.
@@ -27,6 +28,7 @@ Read CONTRIBUTING.md for setup, the project layout and the commit format. This f
 
 - TypeScript in erasable syntax only (no enums, namespaces or parameter properties), with `.ts` extensions on relative imports. Tests run the sources directly with `node --test`.
 - Code that runs inside the compared pages lives as strings in `src/page-script.ts`, since the Node build has no DOM types.
+- The hidden browser starts with `--enable-gpu` and starts again without it when WebGL is missing, as it is in Playwright's own Chromium builds with that flag. Check both paths when changing `src/browser.ts`.
 - Input goes to the pages as raw CDP events without waiting for each reply. Keys outside Playwright's US layout (`ä`) go as raw key events with their text.
 - Comments only for what the code cannot say. No new runtime dependencies without an issue.
 

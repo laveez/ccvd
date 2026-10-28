@@ -65,3 +65,5 @@ export const REFRESH_SCROLL_EFFECTS = `new Promise(resolve => {
 })`;
 
 export const FONTS_READY = 'document.fonts ? document.fonts.ready.then(() => true) : true';
+
+export const HAS_WEBGL = "document.createElement('canvas').getContext('webgl') !== null";
