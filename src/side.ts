@@ -1,9 +1,9 @@
 import { EventEmitter } from 'node:events';
 import type { Browser, BrowserContext, CDPSession, Page, Request } from 'playwright-core';
 import {
-  applyScroll,
   FONTS_READY,
   FREEZE,
+  MAX_FULL_PAGE_CSS_PX,
   PAGE_SCRIPT,
   SCROLL_BINDING,
   SCROLL_POSITION,
@@ -11,6 +11,7 @@ import {
 } from './page-script.ts';
 import { blankImage, blit, decodePng, type RgbaImage } from './png.ts';
 import type { KeyInput, MouseInput, SideName, SideState, ViewSize, WheelInput } from './protocol.ts';
+import { withTimeout } from './timeout.ts';
 import { displayPath } from './urls.ts';
 
 export interface ScreencastFrame {
@@ -20,14 +21,19 @@ export interface ScreencastFrame {
 interface SideEvents {
   frame: [ScreencastFrame];
   scroll: [{ x: number; y: number }];
-  navigated: [string];
+  navigating: [];
+  navigated: [url: string, own: boolean];
   state: [];
 }
+
+type PageWithScroll = typeof globalThis & { __ccvdApplyScroll?: (x: number, y: number) => void };
 
 const MOUSE_EVENT = { move: 'mouseMoved', down: 'mousePressed', up: 'mouseReleased' } as const;
 
 // Chromium wraps captures taller than its 16384 px texture limit, so full pages are taken in slices.
 const MAX_SLICE_DEVICE_PX = 8192;
+const MAX_SCROLL = 10_000_000;
+const PREPARE_STEP_MS = 10_000;
 
 export class Side extends EventEmitter<SideEvents> {
   readonly name: SideName;
@@ -40,6 +46,7 @@ export class Side extends EventEmitter<SideEvents> {
   private readonly cdp: CDPSession;
   private keyQueue: Promise<void> = Promise.resolve();
   private screencasting = false;
+  private ownNavigation = false;
 
   private constructor(name: SideName, base: URL, page: Page, context: BrowserContext, cdp: CDPSession, size: ViewSize) {
     super();
@@ -65,7 +72,13 @@ export class Side extends EventEmitter<SideEvents> {
       reducedMotion: reducedMotion ? 'reduce' : 'no-preference',
     });
     let side: Side | undefined;
-    await context.exposeBinding(SCROLL_BINDING, (_source, x: number, y: number) => side?.emit('scroll', { x, y }));
+    // Every frame of every page, cross-origin iframes included, can call the binding with any values,
+    // so only numbers from the main frame count.
+    await context.exposeBinding(SCROLL_BINDING, (source, x: unknown, y: unknown) => {
+      if (!side || source.page !== side.page || source.frame !== side.page.mainFrame()) return;
+      if (!isScroll(x) || !isScroll(y)) return;
+      side.emit('scroll', { x: Math.round(x), y: Math.round(y) });
+    });
     await context.addInitScript(PAGE_SCRIPT);
     const page = await context.newPage();
     const cdp = await context.newCDPSession(page);
@@ -93,10 +106,10 @@ export class Side extends EventEmitter<SideEvents> {
   }
 
   async captureFullPage(): Promise<RgbaImage> {
-    await this.page.evaluate(applyScroll(0, 0));
+    await this.scrollTo(0, 0);
     const { cssContentSize } = await this.cdp.send('Page.getLayoutMetrics');
     const { width, dpr } = this.size;
-    const height = Math.max(this.size.height, Math.ceil(cssContentSize.height));
+    const height = Math.min(MAX_FULL_PAGE_CSS_PX, Math.max(this.size.height, Math.ceil(cssContentSize.height)));
     const image = blankImage(width * dpr, height * dpr);
     const slice = Math.floor(MAX_SLICE_DEVICE_PX / dpr);
     for (let top = 0; top < height; top += slice) {
@@ -143,28 +156,37 @@ export class Side extends EventEmitter<SideEvents> {
   }
 
   async scrollTo(x: number, y: number): Promise<void> {
-    await this.page.evaluate(applyScroll(x, y)).catch(() => {});
+    await this.page
+      .evaluate(([left, top]) => (globalThis as PageWithScroll).__ccvdApplyScroll?.(left, top), [x, y] as const)
+      .catch(() => {});
   }
 
   async scrollPosition(): Promise<[number, number]> {
     return this.page.evaluate<[number, number]>(SCROLL_POSITION);
   }
 
-  async goto(url: string): Promise<void> {
+  // `own` marks a navigation ccvd starts itself, which the other side must not mirror back.
+  async goto(url: string, own = true): Promise<void> {
     if (!/^https?:/i.test(url)) throw new Error(`Only http and https addresses are supported: ${url}`);
     this.navigatingTo = url;
+    this.ownNavigation = own;
     await this.page.goto(url, { waitUntil: 'commit' }).catch(error => this.navigationFailed(error));
   }
 
   async back(): Promise<void> {
-    await this.page.goBack({ waitUntil: 'commit' }).catch(error => this.navigationFailed(error));
+    this.ownNavigation = true;
+    const response = await this.page.goBack({ waitUntil: 'commit' }).catch(error => this.navigationFailed(error));
+    if (response === null) this.ownNavigation = false;
   }
 
   async forward(): Promise<void> {
-    await this.page.goForward({ waitUntil: 'commit' }).catch(error => this.navigationFailed(error));
+    this.ownNavigation = true;
+    const response = await this.page.goForward({ waitUntil: 'commit' }).catch(error => this.navigationFailed(error));
+    if (response === null) this.ownNavigation = false;
   }
 
   async reload(): Promise<void> {
+    this.ownNavigation = true;
     await this.page.reload({ waitUntil: 'commit' }).catch(error => this.navigationFailed(error));
   }
 
@@ -184,15 +206,16 @@ export class Side extends EventEmitter<SideEvents> {
 
   async prepareForCapture(fullPage: boolean, wait: number): Promise<void> {
     const { page } = this;
-    await page.waitForLoadState('load').catch(() => {});
+    const step = (task: Promise<unknown>, what: string) => withTimeout(task, PREPARE_STEP_MS, what).catch(() => {});
+    await step(page.waitForLoadState('load'), 'Loading');
     await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
-    await page.evaluate(FONTS_READY).catch(() => {});
+    await step(page.evaluate(FONTS_READY), 'Loading fonts');
     if (fullPage) {
-      await page.evaluate(STEP_THROUGH).catch(() => {});
+      await step(page.evaluate(STEP_THROUGH), 'Scrolling through the page');
       await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
     }
     if (wait > 0) await page.waitForTimeout(wait);
-    await page.evaluate(FREEZE).catch(() => {});
+    await step(page.evaluate(FREEZE), 'Freezing animations');
   }
 
   async close(): Promise<void> {
@@ -201,12 +224,17 @@ export class Side extends EventEmitter<SideEvents> {
 
   private listen(): void {
     const { page, cdp } = this;
-    page.on('dialog', dialog => void dialog.dismiss().catch(() => {}));
+    // Dismissing a beforeunload prompt means staying on the page, which would cancel ccvd's navigation.
+    page.on('dialog', dialog => {
+      void (dialog.type() === 'beforeunload' ? dialog.accept() : dialog.dismiss()).catch(() => {});
+    });
+    page.on('crash', () => this.update({ loading: false, error: 'The page crashed. Reload to try again.' }));
     this.context.on('page', popup => void this.adoptPopup(popup));
     page.on('request', request => {
       if (!this.isMainNavigation(request)) return;
       this.navigatingTo = request.url();
       this.update({ loading: true, status: undefined, error: undefined });
+      this.emit('navigating');
     });
     page.on('response', response => {
       if (this.isMainNavigation(response.request())) this.update({ status: response.status() });
@@ -221,9 +249,11 @@ export class Side extends EventEmitter<SideEvents> {
     page.on('framenavigated', frame => {
       if (frame !== page.mainFrame()) return;
       this.navigatingTo = undefined;
+      const own = this.ownNavigation;
+      this.ownNavigation = false;
       const url = frame.url();
       this.update({ url, path: /^https?:/.test(url) ? displayPath(new URL(url)) : url });
-      this.emit('navigated', url);
+      this.emit('navigated', url, own);
     });
     page.on('domcontentloaded', () => void this.refreshTitle());
     page.on('load', () => {
@@ -255,6 +285,7 @@ export class Side extends EventEmitter<SideEvents> {
   }
 
   private navigationFailed(error: unknown): void {
+    this.ownNavigation = false;
     const message = error instanceof Error ? error.message.split('\n')[0] : String(error);
     if (/ERR_ABORTED|interrupted by another navigation|Target .*closed/i.test(message)) return;
     this.update({ loading: false, error: message.replace(/^page\.\w+: /, '') });
@@ -266,7 +297,7 @@ export class Side extends EventEmitter<SideEvents> {
       await popup.waitForURL(url => url.protocol !== 'about:', { timeout: 5000, waitUntil: 'commit' });
       const url = popup.url();
       await popup.close();
-      if (/^https?:/i.test(url)) await this.goto(url);
+      if (/^https?:/i.test(url)) await this.goto(url, false);
     } catch {
       await popup.close().catch(() => {});
     }
@@ -286,4 +317,8 @@ export class Side extends EventEmitter<SideEvents> {
     if (action === 'down') await this.page.keyboard.down(key);
     else await this.page.keyboard.up(key);
   }
+}
+
+function isScroll(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= MAX_SCROLL;
 }

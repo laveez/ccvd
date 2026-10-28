@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { fileURLToPath } from 'node:url';
 import { launchBrowser } from '../browser.ts';
 import { CliError, type Command, type DemoCommand, parseCli, type ShotCommand, USAGE } from '../cli.ts';
 import { runLive } from '../live.ts';
@@ -45,7 +46,9 @@ async function shot(command: ShotCommand): Promise<void> {
 
 async function demo(command: DemoCommand): Promise<void> {
   const sites = await Promise.all(
-    ['before', 'after'].map(side => serveDirectory(new URL(`../../examples/demo/${side}`, import.meta.url).pathname)),
+    ['before', 'after'].map(side =>
+      serveDirectory(fileURLToPath(new URL(`../../examples/demo/${side}`, import.meta.url))),
+    ),
   );
   try {
     await runLive({ ...command, kind: 'live', before: sites[0].url, after: sites[1].url });

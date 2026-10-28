@@ -114,6 +114,10 @@ function onMessage(message: ServerMessage): void {
     showToast(message.message);
     return;
   }
+  if (message.type === 'settled') {
+    setStale(false);
+    return;
+  }
   state = message;
   renderState(message);
   if (firstState) {

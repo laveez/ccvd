@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type { Browser } from 'playwright-core';
+import { firstLine } from './browser.ts';
 import { type DiffResult, diffImages } from './diff.ts';
 import { decodePng, encodePng, type RgbaImage } from './png.ts';
 import type {
@@ -16,6 +17,7 @@ import type {
 } from './protocol.ts';
 import { type ScreencastFrame, Side } from './side.ts';
 import { MAX_SIDE, MIN_SIDE, PRESETS } from './sizes.ts';
+import { TimeoutError, withTimeout } from './timeout.ts';
 import { mapUrl, resolvePath } from './urls.ts';
 import { VERSION } from './version.ts';
 
@@ -24,7 +26,9 @@ export interface Capture {
   before: RgbaImage;
   after: RgbaImage;
   diff: DiffResult;
-  path: string;
+  beforePath: string;
+  afterPath: string;
+  beforeUrl: string;
   size: ViewSize;
 }
 
@@ -33,13 +37,6 @@ interface SessionEvents {
   frame: [FrameHeader, Buffer];
 }
 
-const TICK_MS = 50;
-const QUIET_MS = 150;
-const MAX_STALE_MS = 750;
-const LEAD_MS = 1500;
-const LEAD_EXTEND_MS = 300;
-const CTRL = 2;
-
 export interface SessionOptions {
   before: URL;
   after: URL;
@@ -47,6 +44,17 @@ export interface SessionOptions {
   fit: boolean;
   reducedMotion: boolean;
 }
+
+const TICK_MS = 50;
+const QUIET_MS = 150;
+const MAX_STALE_MS = 750;
+const LEAD_MS = 1500;
+const LEAD_EXTEND_MS = 300;
+const MAX_LEAD_MS = 5000;
+// A capture makes Chromium send one more, identical frame about 10 ms after it ends.
+const ECHO_MS = 150;
+const CAPTURE_TIMEOUT_MS = 15_000;
+const CTRL = 2;
 
 export class Session extends EventEmitter<SessionEvents> {
   readonly before: Side;
@@ -58,16 +66,21 @@ export class Session extends EventEmitter<SessionEvents> {
   latest: Capture | undefined;
   readonly exactFrames = new Map<Channel, [FrameHeader, Buffer]>();
   private leader: Side | undefined;
+  private leadStartedAt = 0;
   private leaderUntil = 0;
   private dirtySince = 0;
   private lastFrameAt = 0;
   private capturing = false;
+  private lastCaptureEnd = 0;
+  private captureStalled = false;
   private captures = 0;
   private viewers = 0;
   private timer: NodeJS.Timeout | undefined;
   private statePending = false;
   private closed = false;
+  private lastPngs: [Buffer, Buffer] | undefined;
   private readonly lastJpeg = new Map<Side, Buffer>();
+  private readonly userNavigation = new Map<Side, boolean>();
 
   private constructor(before: Side, after: Side, options: SessionOptions) {
     super();
@@ -92,8 +105,8 @@ export class Session extends EventEmitter<SessionEvents> {
 
   attach(): void {
     if (this.viewers++ === 0) {
-      void this.before.startScreencast();
-      void this.after.startScreencast();
+      this.run(this.before.startScreencast());
+      this.run(this.after.startScreencast());
     }
     this.markDirty();
   }
@@ -130,19 +143,19 @@ export class Session extends EventEmitter<SessionEvents> {
         this.wheel(message);
         break;
       case 'navigate':
-        void this.navigate(message);
+        this.run(this.navigate(message));
         break;
       case 'size':
         this.fit = message.fit;
         this.queueState();
-        void this.resize(message);
+        this.run(this.resize(message));
         break;
       case 'linked':
         this.linked = message.value;
         this.queueState();
         break;
       case 'reducedMotion':
-        void this.setReducedMotion(message.value);
+        this.run(this.setReducedMotion(message.value));
         break;
     }
   }
@@ -157,9 +170,18 @@ export class Session extends EventEmitter<SessionEvents> {
     for (const side of [this.before, this.after]) {
       side.on('frame', frame => this.onFrame(side, frame));
       side.on('scroll', ({ x, y }) => this.onScroll(side, x, y));
-      side.on('navigated', url => this.onNavigated(side, url));
+      side.on('navigating', () => this.userNavigation.set(side, this.leads(side)));
+      side.on('navigated', (url, own) => this.onNavigated(side, url, own));
       side.on('state', () => this.queueState());
     }
+  }
+
+  private run(task: Promise<unknown>): void {
+    task.catch(error => this.report(firstLine(error)));
+  }
+
+  private report(message: string): void {
+    if (!this.closed) this.emit('message', { type: 'error', message });
   }
 
   private other(side: Side): Side {
@@ -171,8 +193,14 @@ export class Session extends EventEmitter<SessionEvents> {
   }
 
   private lead(side: Side): void {
+    const now = Date.now();
     this.leader = side;
-    this.leaderUntil = Date.now() + LEAD_MS;
+    this.leadStartedAt = now;
+    this.leaderUntil = now + LEAD_MS;
+  }
+
+  private leads(side: Side): boolean {
+    return side === this.leader && Date.now() <= this.leaderUntil;
   }
 
   private mirror<T extends MouseInput | KeyInput>(
@@ -196,19 +224,24 @@ export class Session extends EventEmitter<SessionEvents> {
   }
 
   private onScroll(side: Side, x: number, y: number): void {
+    if (!this.leads(side)) return;
     const now = Date.now();
-    if (side !== this.leader || now > this.leaderUntil) return;
-    this.leaderUntil = Math.max(this.leaderUntil, now + LEAD_EXTEND_MS);
+    this.leaderUntil = Math.min(this.leadStartedAt + MAX_LEAD_MS, Math.max(this.leaderUntil, now + LEAD_EXTEND_MS));
     void this.other(side).scrollTo(x, y);
   }
 
-  private onNavigated(side: Side, url: string): void {
+  // Only navigations the user started on the leading side are followed. Navigations ccvd starts
+  // itself, and the other side's reaction to a followed one, are not mirrored back, so differing
+  // redirects, query strings or base folders cannot bounce the two sides between each other.
+  private onNavigated(side: Side, url: string, own: boolean): void {
     this.markDirty();
-    if (!this.linked || !/^https?:/i.test(url)) return;
+    const user = this.userNavigation.get(side) ?? this.leads(side);
+    this.userNavigation.delete(side);
+    if (own || !user || !this.linked || !/^https?:/i.test(url)) return;
     const other = this.other(side);
     const target = mapUrl(url, side.base, other.base);
     if (other.page.url() === target || other.navigatingTo === target) return;
-    void other.goto(target);
+    this.run(other.goto(target));
   }
 
   private async navigate(request: NavigateRequest): Promise<void> {
@@ -216,17 +249,15 @@ export class Session extends EventEmitter<SessionEvents> {
       await Promise.all([this.before[request.action](), this.after[request.action]()]);
       return;
     }
-    let url: URL;
+    const target = (side: Side) => (request.path === '' ? side.base : resolvePath(side.base, request.path));
+    let urls: [URL, URL];
     try {
-      url = resolvePath(this.before.base, request.path);
+      urls = [target(this.before), target(this.after)];
     } catch (error) {
-      this.emit('message', { type: 'error', message: (error as Error).message });
+      this.report(firstLine(error));
       return;
     }
-    await Promise.all([
-      this.before.goto(url.href),
-      this.after.goto(mapUrl(url.href, this.before.base, this.after.base)),
-    ]);
+    await Promise.all([this.before.goto(urls[0].href), this.after.goto(urls[1].href)]);
   }
 
   private async resize(request: ViewSize): Promise<void> {
@@ -250,10 +281,12 @@ export class Session extends EventEmitter<SessionEvents> {
   }
 
   private onFrame(side: Side, frame: ScreencastFrame): void {
-    // Chromium sends a frame for each repaint, including repaints that change nothing (a capture
-    // can cause one), so only frames whose bytes differ count as a change.
-    if (this.lastJpeg.get(side)?.equals(frame.jpeg)) return;
+    // Lossy JPEG frames can be identical before and after a small change, so an identical frame
+    // still counts as a change, unless it is the echo of a capture that just finished.
+    const previous = this.lastJpeg.get(side);
     this.lastJpeg.set(side, frame.jpeg);
+    const echo = previous?.equals(frame.jpeg) && (this.capturing || Date.now() - this.lastCaptureEnd < ECHO_MS);
+    if (echo) return;
     this.markChanged();
     const header: FrameHeader = {
       channel: side.name,
@@ -297,13 +330,30 @@ export class Session extends EventEmitter<SessionEvents> {
   private async capture(): Promise<void> {
     this.capturing = true;
     this.dirtySince = 0;
+    const paths = {
+      beforePath: this.before.state.path,
+      afterPath: this.after.state.path,
+      beforeUrl: this.before.state.url,
+    };
     try {
-      const [beforePng, afterPng] = await Promise.all([this.before.capturePng(), this.after.capturePng()]);
+      const [beforePng, afterPng] = await withTimeout(
+        Promise.all([this.before.capturePng(), this.after.capturePng()]),
+        CAPTURE_TIMEOUT_MS,
+        'Capturing the pages',
+      );
+      this.captureStalled = false;
+      if (this.closed) return;
+      if (this.lastPngs?.[0].equals(beforePng) && this.lastPngs[1].equals(afterPng) && this.latest) {
+        this.latest = { ...this.latest, ...paths };
+        this.emit('message', { type: 'settled' });
+        return;
+      }
+      this.lastPngs = [beforePng, afterPng];
       const before = decodePng(beforePng);
       const after = decodePng(afterPng);
       const diff = diffImages(before, after);
       const id = ++this.captures;
-      this.latest = { id, before, after, diff, path: this.before.state.path, size: this.size };
+      this.latest = { id, before, after, diff, ...paths, size: this.size };
       const header = {
         format: 'png',
         exact: true,
@@ -314,10 +364,16 @@ export class Session extends EventEmitter<SessionEvents> {
       this.publish({ ...header, channel: 'before' }, beforePng);
       this.publish({ ...header, channel: 'after' }, afterPng);
       this.publish({ ...header, channel: 'diff', changed: diff.changed, total: diff.total }, encodePng(diff.image));
-    } catch {
+    } catch (error) {
       // A side that is mid-navigation cannot be captured; its next frame schedules another try.
+      if (error instanceof TimeoutError && !this.captureStalled) {
+        this.captureStalled = true;
+        this.report('A page stopped responding, so the diff is not up to date. It updates when the page recovers.');
+        this.dirtySince ||= Date.now();
+      }
     } finally {
       this.capturing = false;
+      this.lastCaptureEnd = Date.now();
       if (this.dirtySince) this.schedule();
     }
   }

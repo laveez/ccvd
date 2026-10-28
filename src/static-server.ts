@@ -31,7 +31,14 @@ export async function serveDirectory(root: string): Promise<StaticServer> {
 }
 
 async function respond(base: string, request: http.IncomingMessage, response: http.ServerResponse): Promise<void> {
-  let file = path.join(base, decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname));
+  let pathname: string;
+  try {
+    pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
+  } catch {
+    response.writeHead(400).end();
+    return;
+  }
+  let file = path.join(base, pathname);
   if (file !== base && !file.startsWith(`${base}${path.sep}`)) {
     response.writeHead(403).end();
     return;

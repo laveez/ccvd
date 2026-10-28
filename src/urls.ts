@@ -1,7 +1,7 @@
 const SCHEME = /^[a-z][a-z\d+.-]*:/i;
 
 export function parseBase(input: string): URL {
-  const candidate = SCHEME.test(input) && !/^[^/:]+:\d+(\/|$)/.test(input) ? input : `http://${input}`;
+  const candidate = SCHEME.test(input) && !/^[^/:?#]+:\d+([/?#]|$)/.test(input) ? input : `http://${input}`;
   let url: URL;
   try {
     url = new URL(candidate);

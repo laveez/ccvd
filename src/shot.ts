@@ -7,7 +7,7 @@ import { diffImages } from './diff.ts';
 import { decodePng, encodePng, type RgbaImage } from './png.ts';
 import { Side } from './side.ts';
 import { type Size, sizeLabel } from './sizes.ts';
-import { displayPath, mapUrl, pathSlug, resolvePath } from './urls.ts';
+import { displayPath, pathSlug, resolvePath } from './urls.ts';
 
 export type ShotOptions = Omit<ShotCommand, 'kind' | 'json' | 'browser'>;
 
@@ -38,9 +38,10 @@ export async function runShots(browser: Browser, options: ShotOptions): Promise<
     ]);
     try {
       for (const pagePath of options.paths) {
-        const beforeUrl = resolvePath(options.before, pagePath);
-        const afterUrl = mapUrl(beforeUrl.href, options.before, options.after);
-        await Promise.all([before.goto(beforeUrl.href), after.goto(afterUrl)]);
+        // No path means each address exactly as given, query and hash included.
+        const beforeUrl = pagePath === '' ? options.before : resolvePath(options.before, pagePath);
+        const afterUrl = pagePath === '' ? options.after : resolvePath(options.after, pagePath);
+        await Promise.all([before.goto(beforeUrl.href), after.goto(afterUrl.href)]);
         await Promise.all([
           before.prepareForCapture(options.fullPage, options.wait),
           after.prepareForCapture(options.fullPage, options.wait),

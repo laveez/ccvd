@@ -86,7 +86,8 @@ export interface StateMessage {
   presets: readonly Preset[];
 }
 
-export type ServerMessage = StateMessage | { type: 'error'; message: string };
+// settled: a new capture matched the last one, so the diff on screen is current again.
+export type ServerMessage = StateMessage | { type: 'error'; message: string } | { type: 'settled' };
 
 // Binary WebSocket messages carry an image: a 4-byte big-endian header length, this header as
 // JSON, then the JPEG or PNG bytes.

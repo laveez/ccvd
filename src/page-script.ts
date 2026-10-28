@@ -2,6 +2,9 @@
 
 export const SCROLL_BINDING = '__ccvdScroll';
 
+// Full-page captures stop at this height, so endless feeds end and images stay within memory.
+export const MAX_FULL_PAGE_CSS_PX = 16_384;
+
 // Reports window scroll once per frame, and skips the report for a scroll ccvd applied itself so the
 // two sides do not echo each other's positions back and forth.
 export const PAGE_SCRIPT = `(() => {
@@ -25,8 +28,6 @@ export const PAGE_SCRIPT = `(() => {
   }, { passive: true });
 })();`;
 
-export const applyScroll = (x: number, y: number) => `window.__ccvdApplyScroll?.(${x}, ${y})`;
-
 export const SCROLL_POSITION = '[Math.round(window.scrollX), Math.round(window.scrollY)]';
 
 // Finished animations jump to their end state and endless ones go back to their start, as
@@ -43,10 +44,13 @@ export const FREEZE = `(() => {
   document.documentElement.append(style);
 })()`;
 
-// Scrolls down a screen at a time so lazy images and scroll-triggered content load before a full-page capture.
+// Scrolls down a screen at a time so lazy images and scroll-triggered content load before a
+// full-page capture, stopping at the capture height or after 8 seconds on pages that keep growing.
 export const STEP_THROUGH = `(async () => {
   const step = Math.max(200, window.innerHeight);
-  for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+  const started = performance.now();
+  for (let y = 0; y < Math.min(document.documentElement.scrollHeight, ${MAX_FULL_PAGE_CSS_PX}); y += step) {
+    if (performance.now() - started > 8000) break;
     window.scrollTo({ left: 0, top: y, behavior: 'instant' });
     await new Promise(resolve => setTimeout(resolve, 60));
   }

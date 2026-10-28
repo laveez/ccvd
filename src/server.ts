@@ -24,6 +24,7 @@ export interface RunningServer {
 
 const PORT_ATTEMPTS = 20;
 const MAX_BUFFERED_BYTES = 8 * 1024 * 1024;
+const MAX_MESSAGE_BYTES = 1024 * 1024;
 
 // Running from the TypeScript sources (tests, development) serves the UI build from dist.
 const APP_JS = import.meta.url.endsWith('.ts') ? '../dist/ui/app.js' : './ui/app.js';
@@ -38,10 +39,13 @@ const ASSETS: Record<string, { file: URL; type: string }> = {
 export async function startServer({ session, browser, port }: ServerOptions): Promise<RunningServer> {
   const token = randomBytes(16).toString('hex');
   const clients = new Set<WebSocket>();
-  const sockets = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
+  const sockets = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
   const server = http.createServer();
   const listening = await listen(server, port);
-  const allowedHosts = new Set([`127.0.0.1:${listening}`, `localhost:${listening}`]);
+  // Browsers leave the default port out of Host and Origin.
+  const hostForms =
+    listening === 80 ? ['127.0.0.1', 'localhost'] : [`127.0.0.1:${listening}`, `localhost:${listening}`];
+  const allowedHosts = new Set(hostForms);
   const allowedOrigins = new Set([...allowedHosts].map(host => `http://${host}`));
   const policy = [
     "default-src 'self'",
@@ -89,8 +93,8 @@ export async function startServer({ session, browser, port }: ServerOptions): Pr
     const capture = session.latest;
     if (!capture) return refuse(response, 503, 'Nothing captured yet');
     const layout = url.searchParams.get('layout') === 'pair' ? 'pair' : 'triple';
-    const before: Panel = { label: 'Before', detail: session.before.state.path, image: capture.before };
-    const after: Panel = { label: 'After', detail: session.after.state.path, image: capture.after };
+    const before: Panel = { label: 'Before', detail: capture.beforePath, image: capture.before };
+    const after: Panel = { label: 'After', detail: capture.afterPath, image: capture.after };
     const diff: Panel = {
       label: 'Diff',
       detail: diffDetail(capture.diff.changed, capture.diff.total),
@@ -102,7 +106,10 @@ export async function startServer({ session, browser, port }: ServerOptions): Pr
       layout === 'pair' ? [before, after] : [before, diff, after],
       capture.size.dpr,
     );
-    const name = `ccvd-${pathSlug(new URL(session.before.state.url), session.before.base)}-${sizeLabel(capture.size)}-${layout}.png`;
+    const page = /^https?:/.test(capture.beforeUrl)
+      ? pathSlug(new URL(capture.beforeUrl), session.before.base)
+      : 'page';
+    const name = `ccvd-${page}-${sizeLabel(capture.size)}-${layout}.png`;
     const disposition = url.searchParams.has('download') ? 'attachment' : 'inline';
     response.writeHead(200, {
       'content-type': 'image/png',
@@ -114,8 +121,10 @@ export async function startServer({ session, browser, port }: ServerOptions): Pr
   }
 
   server.on('upgrade', (request, socket, head) => {
-    const url = new URL(request.url ?? '/', 'http://localhost');
+    socket.on('error', () => socket.destroy());
+    const url = URL.parse(request.url ?? '/', 'http://localhost');
     const allowed =
+      url !== null &&
       url.pathname === '/ws' &&
       allowedHosts.has(request.headers.host ?? '') &&
       allowedOrigins.has(request.headers.origin ?? '') &&
@@ -129,6 +138,7 @@ export async function startServer({ session, browser, port }: ServerOptions): Pr
 
   function connect(client: WebSocket): void {
     clients.add(client);
+    client.on('error', () => client.terminate());
     session.attach();
     client.send(JSON.stringify(session.state()));
     for (const [header, bytes] of session.exactFrames.values()) client.send(encodeFrame(header, bytes));

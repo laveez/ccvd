@@ -53,7 +53,8 @@ Live view and demo:
   --no-open           Print the view's address instead of opening it in your browser
 
 Shot:
-  --path <path>       Page to capture, resolved against <before> (repeatable; default: <before> itself)
+  --path <path>       Page to capture, resolved against each address like a link (repeatable;
+                      default: both addresses as given)
   --size <size>       Preset or WIDTHxHEIGHT[@2] (repeatable; default: desktop)
   --viewport          Capture only the viewport instead of the full page
   --out <dir>         Folder for the images (default: ccvd-shots)
