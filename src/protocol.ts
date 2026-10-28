@@ -47,6 +47,7 @@ export type NavigateRequest =
 
 export interface SizeRequest extends ViewSize {
   type: 'size';
+  fit: boolean;
 }
 
 export interface ToggleRequest {
@@ -79,6 +80,7 @@ export interface StateMessage {
   before: SideState;
   after: SideState;
   size: ViewSize;
+  fit: boolean;
   linked: boolean;
   reducedMotion: boolean;
   presets: readonly Preset[];

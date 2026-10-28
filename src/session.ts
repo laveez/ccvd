@@ -40,10 +40,19 @@ const LEAD_MS = 1500;
 const LEAD_EXTEND_MS = 300;
 const CTRL = 2;
 
+export interface SessionOptions {
+  before: URL;
+  after: URL;
+  size: ViewSize;
+  fit: boolean;
+  reducedMotion: boolean;
+}
+
 export class Session extends EventEmitter<SessionEvents> {
   readonly before: Side;
   readonly after: Side;
   size: ViewSize;
+  fit: boolean;
   linked = true;
   reducedMotion: boolean;
   latest: Capture | undefined;
@@ -60,26 +69,22 @@ export class Session extends EventEmitter<SessionEvents> {
   private closed = false;
   private readonly lastJpeg = new Map<Side, Buffer>();
 
-  private constructor(before: Side, after: Side, size: ViewSize, reducedMotion: boolean) {
+  private constructor(before: Side, after: Side, options: SessionOptions) {
     super();
     this.before = before;
     this.after = after;
-    this.size = size;
-    this.reducedMotion = reducedMotion;
+    this.size = options.size;
+    this.fit = options.fit;
+    this.reducedMotion = options.reducedMotion;
   }
 
-  static async create(
-    browser: Browser,
-    before: URL,
-    after: URL,
-    size: ViewSize,
-    reducedMotion: boolean,
-  ): Promise<Session> {
+  static async create(browser: Browser, options: SessionOptions): Promise<Session> {
+    const { before, after, size, reducedMotion } = options;
     const [beforeSide, afterSide] = await Promise.all([
       Side.open(browser, 'before', before, size, reducedMotion),
       Side.open(browser, 'after', after, size, reducedMotion),
     ]);
-    const session = new Session(beforeSide, afterSide, size, reducedMotion);
+    const session = new Session(beforeSide, afterSide, options);
     session.wire();
     await Promise.all([beforeSide.goto(before.href), afterSide.goto(after.href)]);
     return session;
@@ -106,6 +111,7 @@ export class Session extends EventEmitter<SessionEvents> {
       before: this.before.state,
       after: this.after.state,
       size: this.size,
+      fit: this.fit,
       linked: this.linked,
       reducedMotion: this.reducedMotion,
       presets: PRESETS,
@@ -127,6 +133,8 @@ export class Session extends EventEmitter<SessionEvents> {
         void this.navigate(message);
         break;
       case 'size':
+        this.fit = message.fit;
+        this.queueState();
         void this.resize(message);
         break;
       case 'linked':
