@@ -28,7 +28,11 @@ export interface ShotCommand extends Common {
   json: boolean;
 }
 
-export type Command = LiveCommand | ShotCommand | { kind: 'help' } | { kind: 'version' };
+export interface DemoCommand extends Omit<LiveCommand, 'kind' | 'before' | 'after'> {
+  kind: 'demo';
+}
+
+export type Command = LiveCommand | ShotCommand | DemoCommand | { kind: 'help' } | { kind: 'version' };
 
 export class CliError extends Error {}
 
@@ -39,10 +43,11 @@ Compare two versions of a site side by side, with an exact pixel diff between th
 Usage:
   ccvd <before> <after> [options]        Open the live compare view
   ccvd shot <before> <after> [options]   Save before, after and diff images
+  ccvd demo [options]                    Try the live view on a bundled demo site
 
 <before> and <after> are http(s) addresses; host:port means http://host:port.
 
-Live view:
+Live view and demo:
   --size <size>       Page size: fit (default: follows the pane), a preset or WIDTHxHEIGHT[@2]
   --port <port>       Port to serve the view on (default ${DEFAULT_PORT}; the next free one if taken)
   --no-open           Print the view's address instead of opening it in your browser
@@ -94,12 +99,6 @@ export function parseCli(argv: string[]): Command {
   if (values.version) return { kind: 'version' };
 
   const shot = positionals[0] === 'shot';
-  const addresses = shot ? positionals.slice(1) : positionals;
-  if (addresses.length !== 2) {
-    throw new CliError(
-      `Expected two addresses, before and after, but got ${addresses.length}.\nRun ccvd --help for usage.`,
-    );
-  }
   const given = new Set(tokens.filter(token => token.kind === 'option').map(token => token.name));
   for (const name of shot ? LIVE_ONLY : SHOT_ONLY) {
     if (given.has(name)) {
@@ -107,6 +106,17 @@ export function parseCli(argv: string[]): Command {
         `--${name === 'open' ? 'no-open' : name} applies only to ${shot ? 'the live view' : 'ccvd shot'}.`,
       );
     }
+  }
+  if (positionals[0] === 'demo') {
+    if (positionals.length > 1) throw new CliError('ccvd demo takes no addresses: it serves its own demo site.');
+    return { kind: 'demo', ...liveOptions(values), browser: values.browser, reducedMotion: values['reduced-motion'] };
+  }
+
+  const addresses = shot ? positionals.slice(1) : positionals;
+  if (addresses.length !== 2) {
+    throw new CliError(
+      `Expected two addresses, before and after, but got ${addresses.length}.\nRun ccvd --help for usage.`,
+    );
   }
 
   const common: Common = {
@@ -127,11 +137,13 @@ export function parseCli(argv: string[]): Command {
       json: values.json,
     };
   }
+  return { kind: 'live', ...common, ...liveOptions(values) };
+}
+
+function liveOptions(values: ReturnType<typeof parse>['values']): Pick<LiveCommand, 'size' | 'port' | 'open'> {
   if ((values.size?.length ?? 0) > 1) throw new CliError('The live view takes one --size.');
   const size = values.size?.[0] ?? 'fit';
   return {
-    kind: 'live',
-    ...common,
     size: size === 'fit' ? 'fit' : wrap(() => parseSize(size)),
     port: integer('port', values.port ?? String(DEFAULT_PORT), 1, 65_535),
     open: values.open,

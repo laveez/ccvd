@@ -10,7 +10,8 @@
   },
   "files": [
     "dist",
-    "ui"
+    "ui",
+    "examples/demo"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && tsc -p src/ui/tsconfig.json && node -e \"require('fs').chmodSync('dist/bin/ccvd.js', 0o755)\"",

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { launchBrowser } from '../browser.ts';
-import { CliError, type Command, parseCli, type ShotCommand, USAGE } from '../cli.ts';
+import { CliError, type Command, type DemoCommand, parseCli, type ShotCommand, USAGE } from '../cli.ts';
 import { runLive } from '../live.ts';
 import { formatResults, runShots } from '../shot.ts';
+import { serveDirectory } from '../static-server.ts';
 import { VERSION } from '../version.ts';
 
 try {
@@ -26,6 +27,9 @@ async function run(command: Command): Promise<void> {
     case 'shot':
       await shot(command);
       return;
+    case 'demo':
+      await demo(command);
+      return;
   }
 }
 
@@ -36,5 +40,16 @@ async function shot(command: ShotCommand): Promise<void> {
     console.log(command.json ? JSON.stringify(results, null, 2) : formatResults(results, command.out));
   } finally {
     await browser.close();
+  }
+}
+
+async function demo(command: DemoCommand): Promise<void> {
+  const sites = await Promise.all(
+    ['before', 'after'].map(side => serveDirectory(new URL(`../../examples/demo/${side}`, import.meta.url).pathname)),
+  );
+  try {
+    await runLive({ ...command, kind: 'live', before: sites[0].url, after: sites[1].url });
+  } finally {
+    await Promise.all(sites.map(site => site.close()));
   }
 }

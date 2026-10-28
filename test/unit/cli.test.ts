@@ -62,6 +62,19 @@ test('shot defaults to the before address at desktop size, full page', () => {
   ]);
 });
 
+test('demo takes the live view options and no addresses', () => {
+  assert.deepEqual(parseCli(['demo', '--no-open', '--size', 'tablet']), {
+    kind: 'demo',
+    size: { width: 768, height: 1024, dpr: 1 },
+    port: DEFAULT_PORT,
+    open: false,
+    browser: undefined,
+    reducedMotion: false,
+  });
+  assert.throws(() => parseCli(['demo', 'a:1']), /takes no addresses/);
+  assert.throws(() => parseCli(['demo', '--json']), /--json applies only to ccvd shot/);
+});
+
 test('help and version', () => {
   assert.deepEqual(parseCli(['-h']), { kind: 'help' });
   assert.deepEqual(parseCli(['--version']), { kind: 'version' });
