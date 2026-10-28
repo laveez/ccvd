@@ -24,6 +24,7 @@
     "versions": "node scripts/check-versions.ts",
     "set-version": "node scripts/set-version.ts",
     "check": "npm run lint && npm run typecheck && npm run versions && npm run build && npm test",
+    "assets": "node scripts/assets.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
