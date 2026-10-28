@@ -1,0 +1,65 @@
+{
+  "name": "ccvd",
+  "version": "0.1.0",
+  "description": "Claude Code Visual Diff: browse two versions of a site side by side with a live, exact pixel diff between them",
+  "type": "module",
+  "author": "laveez",
+  "license": "MIT",
+  "bin": {
+    "ccvd": "dist/bin/ccvd.js"
+  },
+  "files": [
+    "dist",
+    "ui"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsc -p src/ui/tsconfig.json && node -e \"require('fs').chmodSync('dist/bin/ccvd.js', 0o755)\"",
+    "typecheck": "tsc -p tsconfig.json && tsc -p src/ui/tsconfig.json --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "node --test 'test/**/*.test.ts'",
+    "test:unit": "node --test 'test/unit/*.test.ts'",
+    "test:e2e": "node --test 'test/e2e/*.test.ts'",
+    "versions": "node scripts/check-versions.ts",
+    "check": "npm run lint && npm run typecheck && npm run versions && npm run build && npm test",
+    "demo": "node scripts/demo.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "claude-code-plugin",
+    "visual-diff",
+    "visual-regression",
+    "pixel-diff",
+    "screenshot",
+    "before-after",
+    "playwright",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laveez/ccvd.git"
+  },
+  "bugs": {
+    "url": "https://github.com/laveez/ccvd/issues"
+  },
+  "homepage": "https://github.com/laveez/ccvd#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "dependencies": {
+    "playwright-core": "^1.64.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.3",
+    "@types/node": "^26.6.5",
+    "@types/ws": "^8.18.2",
+    "typescript": "^7.0.2"
+  }
+}

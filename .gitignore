@@ -1,0 +1,9 @@
+node_modules/
+dist/
+ccvd-shots/
+.playwright-mcp/
+.worktrees/
+.DS_Store
+*.tgz
+*.log
+*.tsbuildinfo
