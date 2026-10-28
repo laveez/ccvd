@@ -12,16 +12,16 @@ test('two addresses open the live view with defaults', () => {
   assert.equal(command.size, 'fit');
   assert.equal(command.port, DEFAULT_PORT);
   assert.equal(command.open, true);
-  assert.equal(command.reducedMotion, false);
+  assert.equal(command.reducedMotion, true);
 });
 
 test('live view options', () => {
-  const command = parseCli(['a:1', 'b:2', '--size', 'phone@2', '--port', '9000', '--no-open', '--reduced-motion']);
+  const command = parseCli(['a:1', 'b:2', '--size', 'phone@2', '--port', '9000', '--no-open', '--no-reduced-motion']);
   assert.deepEqual(command.kind === 'live' && [command.size, command.port, command.open, command.reducedMotion], [
     { width: 440, height: 956, dpr: 2 },
     9000,
     false,
-    true,
+    false,
   ]);
 });
 
@@ -69,7 +69,7 @@ test('demo takes the live view options and no addresses', () => {
     port: DEFAULT_PORT,
     open: false,
     browser: undefined,
-    reducedMotion: false,
+    reducedMotion: true,
   });
   assert.throws(() => parseCli(['demo', 'a:1']), /takes no addresses/);
   assert.throws(() => parseCli(['demo', '--json']), /--json applies only to ccvd shot/);

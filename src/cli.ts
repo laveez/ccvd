@@ -63,7 +63,7 @@ Shot:
 
 Both:
   --browser <name>    chromium, chrome, msedge or the path to a Chromium-based browser
-  --reduced-motion    Render pages with prefers-reduced-motion: reduce
+  --no-reduced-motion Let pages animate; by default they render with prefers-reduced-motion: reduce
   -h, --help          Show this help
   -v, --version       Show the version
 
@@ -80,7 +80,7 @@ const OPTIONS = {
   wait: { type: 'string' },
   json: { type: 'boolean', default: false },
   browser: { type: 'string' },
-  'reduced-motion': { type: 'boolean', default: false },
+  'reduced-motion': { type: 'boolean', default: true },
   help: { type: 'boolean', short: 'h', default: false },
   version: { type: 'boolean', short: 'v', default: false },
 } as const;

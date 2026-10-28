@@ -83,7 +83,7 @@ ccvd <before> <after>
 | **Path field, back, forward, reload** | Navigate both sides together |
 | **Size** | *Fit to pane*, or a preset from desktop 1920×1080 down to small phone 390×844, at 1x or 2x |
 | **Diff** | Shows or hides the diff pane. Hidden, the two pages share the width and ccvd stops its regular captures of pages that keep animating. Your browser remembers the choice |
-| **Reduced motion** | Renders both sides with `prefers-reduced-motion: reduce`, so animated pages hold still. ccvd suggests it when a page keeps animating |
+| **Reduced motion** | On by default: renders both sides with `prefers-reduced-motion: reduce`, so animated pages hold still. Turn it off to see the animations; ccvd suggests turning it back on when a page keeps animating |
 | **Before + After, Before + Diff + After** | Open the current view as one image in a new tab, or download it |
 
 The panes stream while pages move, and the diff pane marks its image as out of date. Once both sides are still, ccvd takes lossless captures, diffs them, and the diff pane shows the changed-pixel count.
@@ -133,7 +133,7 @@ ccvd demo [options]                    Try the live view on a bundled demo site
 | `--wait <ms>` | shot | Extra wait after the pages settle, default `300` |
 | `--json` | shot | Print the results as JSON |
 | `--browser <name>` | all | `chromium`, `chrome`, `msedge` or the path to a Chromium-based browser |
-| `--reduced-motion` | all | Render with `prefers-reduced-motion: reduce` |
+| `--no-reduced-motion` | all | Let pages animate. By default both sides render with `prefers-reduced-motion: reduce` |
 
 Size presets: `desktop` 1920×1080, `laptop` 1440×900, `small` 1280×800, `tablet` 768×1024, `phone` 440×956, `phone-small` 390×844.
 
