@@ -90,7 +90,7 @@ The panes stream while pages move. Once both sides are still, ccvd takes lossles
 ## Images with ccvd shot
 
 ```bash
-npx ccvd shot http://localhost:8101 http://localhost:8102 --path / --path pricing --size desktop --size phone
+npx ccvd shot http://localhost:8101 http://localhost:8102 --path / --path pricing.html --size desktop --size phone
 ```
 
 For every page and size, ccvd writes five PNGs to `ccvd-shots/`:
