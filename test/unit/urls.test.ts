@@ -49,5 +49,7 @@ test('pathSlug names pages for files', () => {
   assert.equal(pathSlug(resolvePath(base, 'tickets'), base), 'tickets');
   assert.equal(pathSlug(resolvePath(base, 'Hacker Puzzle/?page=2'), base), 'hacker-puzzle-page-2');
   assert.equal(pathSlug(resolvePath(base, '/2026/about'), base), '2026-about');
+  assert.equal(pathSlug(resolvePath(base, 'pricing.html'), base), 'pricing');
+  assert.equal(pathSlug(resolvePath(base, 'index.php'), base), 'index');
   assert.equal(displayPath(resolvePath(base, 'x?y#z')), '/2027/x?y#z');
 });

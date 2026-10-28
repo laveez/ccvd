@@ -36,7 +36,8 @@ export function displayPath(url: URL): string {
 export function pathSlug(url: URL, base: URL): string {
   const prefix = directoryOf(base.pathname);
   const relative = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) : url.pathname;
-  const slug = safeDecode(`${relative}${url.search}`)
+  const page = relative.replace(/\.(html?|php)$/i, '');
+  const slug = safeDecode(`${page}${url.search}`)
     .toLowerCase()
     .replace(/[^a-z\d]+/g, '-')
     .replace(/^-+|-+$/g, '')
