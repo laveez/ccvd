@@ -3,8 +3,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import type { Browser } from 'playwright-core';
 import { launchBrowser } from '../../src/browser.ts';
+import { MAX_FULL_PAGE_CSS_PX } from '../../src/page-script.ts';
 import { decodePng } from '../../src/png.ts';
 import { runShots, type ShotOptions } from '../../src/shot.ts';
 import { type StaticServer, serveDirectory } from '../../src/static-server.ts';
@@ -18,8 +20,8 @@ let out: string;
 
 before(async () => {
   browser = await launchBrowser();
-  beforeSite = await serveDirectory(new URL('before', demo).pathname);
-  afterSite = await serveDirectory(new URL('after', demo).pathname);
+  beforeSite = await serveDirectory(fileURLToPath(new URL('before', demo)));
+  afterSite = await serveDirectory(fileURLToPath(new URL('after', demo)));
   out = await mkdtemp(path.join(os.tmpdir(), 'ccvd-shot-'));
   const tall = path.join(out, 'tall');
   await mkdir(tall);
@@ -74,15 +76,16 @@ test('a side compared with itself has no changed pixels', { timeout: 60_000 }, a
   assert.equal(decodePng(await readFile(result.files.before)).height, 600);
 });
 
-test('pages taller than the capture limit are stitched without wrapping', { timeout: 60_000 }, async () => {
+test('tall pages are stitched from slices and stop at 16,384 px', { timeout: 60_000 }, async () => {
   const [result] = await runShots(
     browser,
     options({ before: tallSite.url, after: tallSite.url, sizes: [{ width: 300, height: 1000, dpr: 1 }] }),
   );
   const image = decodePng(await readFile(result.files.before));
-  assert.equal(image.height, 90 * 200);
+  assert.equal(image.height, MAX_FULL_PAGE_CSS_PX);
   const pixel = (y: number) => Array.from(image.data.subarray(y * image.width * 4, y * image.width * 4 + 3));
-  assert.deepEqual(pixel(89 * 200 + 100), [178, 90, 160]);
+  assert.deepEqual(pixel(40 * 200 + 100), [80, 90, 160], 'band 40, just past the first 8192 px slice');
+  assert.deepEqual(pixel(81 * 200 + 100), [162, 90, 160], 'band 81, near the bottom of the capture');
   assert.equal(result.changed, 0);
 });
 

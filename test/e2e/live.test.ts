@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { after, before, test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import type { Browser } from 'playwright-core';
 import WebSocket from 'ws';
 import { launchBrowser } from '../../src/browser.ts';
@@ -20,8 +21,8 @@ let server: RunningServer;
 
 before(async () => {
   browser = await launchBrowser();
-  beforeSite = await serveDirectory(new URL('before', demo).pathname);
-  afterSite = await serveDirectory(new URL('after', demo).pathname);
+  beforeSite = await serveDirectory(fileURLToPath(new URL('before', demo)));
+  afterSite = await serveDirectory(fileURLToPath(new URL('after', demo)));
   session = await Session.create(browser, {
     before: beforeSite.url,
     after: afterSite.url,
@@ -72,18 +73,28 @@ class Viewer {
   }
 }
 
-function open(options: { token?: string; origin?: string } = {}): Promise<WebSocket> {
-  const socket = new WebSocket(`ws://127.0.0.1:${server.port}/ws?t=${options.token ?? token()}`, {
+function connect(options: { token?: string; origin?: string } = {}): WebSocket {
+  return new WebSocket(`ws://127.0.0.1:${server.port}/ws?t=${options.token ?? token()}`, {
     origin: options.origin ?? origin(),
   });
+}
+
+function opened(socket: WebSocket): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
     socket.once('open', () => resolve(socket));
     socket.once('error', reject);
   });
 }
 
+const open = (options: { token?: string; origin?: string } = {}) => opened(connect(options));
+
+// The server sends its state as soon as the socket opens, and ws can deliver that message before a
+// promise waiting for 'open' resumes, so the viewer listens from the moment the socket exists.
 async function viewer(): Promise<Viewer> {
-  return new Viewer(await open());
+  const socket = connect();
+  const client = new Viewer(socket);
+  await opened(socket);
+  return client;
 }
 
 async function until<T>(check: () => T | Promise<T>, what: string, timeout = 15_000): Promise<NonNullable<T>> {

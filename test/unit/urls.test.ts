@@ -7,6 +7,8 @@ test('parseBase reads host:port as http and keeps full URLs', () => {
   assert.equal(parseBase('127.0.0.1:8102/2027/').href, 'http://127.0.0.1:8102/2027/');
   assert.equal(parseBase('example.com').href, 'http://example.com/');
   assert.equal(parseBase('https://example.com/a?b#c').href, 'https://example.com/a?b#c');
+  assert.equal(parseBase('localhost:3000?x=1').href, 'http://localhost:3000/?x=1');
+  assert.equal(parseBase('localhost:3000#top').href, 'http://localhost:3000/#top');
 });
 
 test('parseBase and resolvePath refuse anything but http and https', () => {
