@@ -41,7 +41,16 @@ jobs:
       - run: npm ci
       - run: npm run versions
       - run: npm run build
-      - run: npm publish --provenance --access public
+
+      - name: Publish to npm
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if npm view "ccvd@${TAG_NAME#v}" version > /dev/null 2>&1; then
+            echo "ccvd@${TAG_NAME#v} is already on npm, skipping the publish"
+          else
+            npm publish --provenance --access public
+          fi
 
       - name: Draft release notes
         env:
