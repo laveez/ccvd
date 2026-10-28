@@ -8,7 +8,7 @@ You can expect an initial response within 48 hours.
 
 ## Supported Versions
 
-Fixes go into the latest release. Update with `npx ccvd@latest` or by updating the Claude Code plugin.
+Fixes go into the latest release. Update with `npx @laveez/ccvd@latest` or by updating the Claude Code plugin.
 
 ## What ccvd exposes
 

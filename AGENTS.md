@@ -16,7 +16,7 @@ Read CONTRIBUTING.md for setup, the project layout and the commit format. This f
 - **The diff is exact.** Equal RGBA bytes are unchanged; anything else is red (`#FF0000`). No thresholds and no anti-aliasing tolerance. Both sides render in the same Chromium at the same size and pixel ratio, which is what makes equal pages come out with zero changed pixels. Keep it that way.
 - **Exports are pixel copies.** `compose.ts` copies captures into the composite in Node; only the label strips come from the browser.
 - **Security checks stay.** The server binds `127.0.0.1`; the WebSocket and `/export.png` need the token; requests need an allowed `Host`, the WebSocket an allowed `Origin`; pages navigate to http(s) only; `parseClientMessage` validates every message from the UI. Do not loosen any of these.
-- **Versions move together.** `package.json`, `plugins/ccvd/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and every `ccvd@<version>` in `plugins/ccvd/skills/ccvd/SKILL.md`. Use `npm run set-version -- <version>`; `npm run versions` checks them.
+- **Versions move together.** `package.json`, `plugins/ccvd/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and every `@laveez/ccvd@<version>` in `plugins/ccvd/skills/ccvd/SKILL.md`. Use `npm run set-version -- <version>`; `npm run versions` checks them.
 - **`src/protocol.ts` is shared** by the server build and the UI build. Keep it types only: the UI is served as a single module, `dist/ui/app.js`, and cannot import runtime values from other files.
 - **No personal data** in the repository: no real names, email addresses or private sites. Examples use `examples/demo` or `localhost`.
 

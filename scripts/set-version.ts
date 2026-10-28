@@ -24,5 +24,7 @@ async function update(path: string, change: (text: string) => string): Promise<v
 const setJsonVersion = (text: string) => text.replace(/("version":\s*")[^"]+(")/, `$1${version}$2`);
 await update('plugins/ccvd/.claude-plugin/plugin.json', setJsonVersion);
 await update('.claude-plugin/marketplace.json', setJsonVersion);
-await update('plugins/ccvd/skills/ccvd/SKILL.md', text => text.replace(/ccvd@\d+\.\d+\.\d+/g, `ccvd@${version}`));
+await update('plugins/ccvd/skills/ccvd/SKILL.md', text =>
+  text.replace(/@laveez\/ccvd@\d+\.\d+\.\d+/g, `@laveez/ccvd@${version}`),
+);
 console.log(`Set ${version} in package.json, the plugin, the marketplace and the skill.`);

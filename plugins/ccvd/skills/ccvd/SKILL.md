@@ -10,7 +10,7 @@ ccvd renders two versions of a site in one hidden Chromium and compares them pix
 - **Live view**, for the user: before, diff and after side by side in their browser, with scrolling, clicks, typing and links mirrored to both sides.
 - **shot**, for you: before, after, diff and composite PNGs per page and size, with the count of changed pixels.
 
-Run it as `npx -y ccvd@0.1.0`, with the before address first and the after address second. It needs Google Chrome, or the Chromium from `npx -y playwright-core install chromium`.
+Run it as `npx -y @laveez/ccvd@0.1.0`, with the before address first and the after address second. It needs Google Chrome, or the Chromium from `npx -y playwright-core install chromium`.
 
 ## 1. Get two addresses
 
@@ -26,7 +26,7 @@ ccvd compares two running sites. Use deployed URLs as they are (production again
 Run in the background; it keeps running until stopped:
 
 ```bash
-npx -y ccvd@0.1.0 http://127.0.0.1:8101/ http://127.0.0.1:8102/
+npx -y @laveez/ccvd@0.1.0 http://127.0.0.1:8101/ http://127.0.0.1:8102/
 ```
 
 It opens the view in the user's browser and prints its address (`Open http://127.0.0.1:2283/?t=…`). Give the user that address. Add `--no-open` when the user is on another machine. Useful options: `--size desktop|laptop|tablet|phone|WIDTHxHEIGHT`, `--reduced-motion` for pages that keep animating.
@@ -34,7 +34,7 @@ It opens the view in the user's browser and prints its address (`Open http://127
 ## 3. Images for a PR, or to check your own work
 
 ```bash
-npx -y ccvd@0.1.0 shot http://127.0.0.1:8101/ http://127.0.0.1:8102/ --path / --path pricing.html --size desktop --size phone --out <dir> --json
+npx -y @laveez/ccvd@0.1.0 shot http://127.0.0.1:8101/ http://127.0.0.1:8102/ --path / --path pricing.html --size desktop --size phone --out <dir> --json
 ```
 
 - Take each `--path` from the site's own links: `pricing.html` on a plain static server, `/pricing` on most frameworks. It resolves against the before address like a link; the after side gets the same page.

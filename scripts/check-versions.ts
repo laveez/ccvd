@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The plugin's skill runs npx -y ccvd@<version>, so a release must move the npm package, the plugin
+// The plugin's skill runs npx -y @laveez/ccvd@<version>, so a release must move the npm package, the plugin
 // manifest, the marketplace entry and every pinned version in the skill together.
 import { readFile } from 'node:fs/promises';
 
@@ -9,7 +9,7 @@ const read = (path: string) => readFile(new URL(path, root), 'utf8');
 const expected: string = JSON.parse(await read('package.json')).version;
 const marketplace = JSON.parse(await read('.claude-plugin/marketplace.json'));
 const skill = await read('plugins/ccvd/skills/ccvd/SKILL.md');
-const pins = [...skill.matchAll(/ccvd@(\S+?)(?=[\s`)]|$)/gm)].map(match => match[1]);
+const pins = [...skill.matchAll(/@laveez\/ccvd@(\S+?)(?=[\s`)]|$)/gm)].map(match => match[1]);
 
 const found: [string, string | undefined][] = [
   [
@@ -25,7 +25,7 @@ const found: [string, string | undefined][] = [
 const wrong = found.filter(([, version]) => version !== expected);
 
 if (pins.length === 0) {
-  console.error('plugins/ccvd/skills/ccvd/SKILL.md pins no ccvd@<version>.');
+  console.error('plugins/ccvd/skills/ccvd/SKILL.md pins no @laveez/ccvd@<version>.');
   process.exit(1);
 }
 if (wrong.length > 0) {

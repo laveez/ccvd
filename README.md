@@ -8,7 +8,7 @@
 
 Browse two versions of a site side by side, with an exact pixel diff between them.
 
-[![npm](https://img.shields.io/npm/v/ccvd?style=flat-square)](https://www.npmjs.com/package/ccvd)
+[![npm](https://img.shields.io/npm/v/@laveez/ccvd?style=flat-square)](https://www.npmjs.com/package/@laveez/ccvd)
 [![CI](https://img.shields.io/github/actions/workflow/status/laveez/ccvd/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/laveez/ccvd/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Node.js 22.18+](https://img.shields.io/badge/Node.js-22.18%2B-brightgreen?style=flat-square)](https://nodejs.org)
@@ -34,16 +34,18 @@ ccvd puts the before and after of a web change next to each other, with every ch
 Try it on the bundled demo site:
 
 ```bash
-npx ccvd demo
+npx @laveez/ccvd demo
 ```
 
 Compare your own two versions, for example two local dev servers:
 
 ```bash
-npx ccvd http://localhost:8101 http://localhost:8102
+npx @laveez/ccvd http://localhost:8101 http://localhost:8102
 ```
 
 ccvd opens the compare view in your browser. It needs Node.js 22.18 or newer and a Chromium-based browser: Google Chrome works, or install Playwright's Chromium with `npx playwright-core install chromium`.
+
+To keep it installed, `npm install -g @laveez/ccvd`; the command is then `ccvd`, as in the examples below.
 
 ---
 
@@ -70,7 +72,7 @@ The skill has Claude check out both versions, start a server for each, run ccvd,
 ## Live View
 
 ```bash
-npx ccvd <before> <after>
+ccvd <before> <after>
 ```
 
 | Part | What it does |
@@ -90,7 +92,7 @@ The panes stream while pages move. Once both sides are still, ccvd takes lossles
 ## Images with ccvd shot
 
 ```bash
-npx ccvd shot http://localhost:8101 http://localhost:8102 --path / --path pricing.html --size desktop --size phone
+ccvd shot http://localhost:8101 http://localhost:8102 --path / --path pricing.html --size desktop --size phone
 ```
 
 For every page and size, ccvd writes five PNGs to `ccvd-shots/`:
