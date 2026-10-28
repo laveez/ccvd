@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-import { CliError, type Command, parseCli, USAGE } from '../cli.ts';
+import { launchBrowser } from '../browser.ts';
+import { CliError, type Command, parseCli, type ShotCommand, USAGE } from '../cli.ts';
 import { runLive } from '../live.ts';
+import { formatResults, runShots } from '../shot.ts';
 import { VERSION } from '../version.ts';
 
 try {
@@ -22,7 +24,17 @@ async function run(command: Command): Promise<void> {
       await runLive(command);
       return;
     case 'shot':
-      throw new CliError('ccvd shot is not available yet.');
+      await shot(command);
+      return;
   }
 }
 
+async function shot(command: ShotCommand): Promise<void> {
+  const browser = await launchBrowser(command.browser);
+  try {
+    const results = await runShots(browser, command);
+    console.log(command.json ? JSON.stringify(results, null, 2) : formatResults(results, command.out));
+  } finally {
+    await browser.close();
+  }
+}
