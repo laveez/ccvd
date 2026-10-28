@@ -107,7 +107,7 @@ For every page and size, ccvd writes five PNGs to `ccvd-shots/`:
 
 ![Before, diff and after of the demo pricing page](docs/before-diff-after.png)
 
-Captures are full page by default (`--viewport` for the visible part only), taken after the page has loaded, fonts are ready, lazy content has had a chance to load, and animations are frozen. `--json` prints each result with its changed and total pixels and both sides' HTTP status, so scripts and Claude can check the outcome.
+Captures are full page by default, up to 16,384 px tall (`--viewport` for the visible part only), taken after the page has loaded, fonts are ready, lazy content has had a chance to load, and animations are frozen. `--json` prints each result with its changed and total pixels and both sides' HTTP status, so scripts and Claude can check the outcome.
 
 ---
 
@@ -126,7 +126,7 @@ ccvd demo [options]                    Try the live view on a bundled demo site
 | `--size <size>` | all | `fit` (live view default), a preset, or `WIDTHxHEIGHT`, with `@2` for 2x. Repeatable for `shot` (default `desktop`) |
 | `--port <port>` | live, demo | Port for the view, default `2283` (ccvd on a phone keypad); the next free port if taken |
 | `--no-open` | live, demo | Print the view's address instead of opening it |
-| `--path <path>` | shot | Page to capture, resolved against `<before>` like a link; repeatable |
+| `--path <path>` | shot | Page to capture, resolved against each address like a link; repeatable. Without it, both addresses as given |
 | `--viewport` | shot | Capture only the viewport |
 | `--out <dir>` | shot | Folder for the images, default `ccvd-shots` |
 | `--wait <ms>` | shot | Extra wait after the pages settle, default `300` |
@@ -173,7 +173,7 @@ flowchart LR
 
 ## Security
 
-The view's server listens on `127.0.0.1` only, and the address ccvd prints carries a random token that the page controls and image exports require. Requests from other hosts or origins are refused, and the compared pages can only go to http(s) addresses. See [SECURITY.md](SECURITY.md) for details and how to report a vulnerability.
+The view's server listens on `127.0.0.1` only, and the address ccvd prints carries a random token that the page controls and image exports require. Requests from other hosts or origins are refused, and the compared pages can only go to http(s) addresses. Chromium runs with its sandbox; where the sandbox cannot start, ccvd says so and runs without it. The compared pages cannot reach each other: they only report scroll positions, which ccvd checks are numbers from the top-level page. See [SECURITY.md](SECURITY.md) for details and how to report a vulnerability.
 
 ---
 
@@ -183,6 +183,7 @@ The view's server listens on `127.0.0.1` only, and the address ccvd prints carri
 - **Linked clicks land at the same spot on both pages.** Where the layouts differ, the click on the other side can hit something else; unlink to use one side at a time.
 - **Window scroll syncs; scroll areas inside a page do not.** The wheel scrolls them only on the side under the pointer.
 - **A layout shift turns everything below it red**, because the diff is exact. Look for where the red starts.
+- **Full-page captures stop at 16,384 px**, so endless feeds finish and images stay a sensible size.
 
 ---
 

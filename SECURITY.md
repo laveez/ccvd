@@ -19,4 +19,7 @@ ccvd runs a local web server for its compare view and drives a headless Chromium
 - Requests must carry a `Host` header of `127.0.0.1:<port>` or `localhost:<port>`, and the WebSocket an `Origin` from the same, which blocks other websites and DNS rebinding.
 - The compared pages, and paths typed into the view, can only be `http` or `https` addresses.
 
-The compared pages run in Chromium with your network access, as any page you open yourself would. Compare only sites you trust.
+- Chromium runs with its sandbox. Where the sandbox cannot start (some Linux setups and containers), ccvd prints a warning and runs without it.
+- The compared pages cannot run code in each other. All they send ccvd is their scroll position, which it accepts only as numbers from the top-level page and passes on as data, never as code.
+
+The compared pages have your network access, as any page you open yourself would. Compare only sites you trust.

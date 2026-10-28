@@ -37,7 +37,7 @@ It opens the view in the user's browser and prints its address (`Open http://127
 npx -y @laveez/ccvd@0.1.0 shot http://127.0.0.1:8101/ http://127.0.0.1:8102/ --path / --path pricing.html --size desktop --size phone --out <dir> --json
 ```
 
-- Take each `--path` from the site's own links: `pricing.html` on a plain static server, `/pricing` on most frameworks. It resolves against the before address like a link; the after side gets the same page.
+- Take each `--path` from the site's own links: `pricing.html` on a plain static server, `/pricing` on most frameworks. It resolves against each address like a link. Without `--path`, both addresses are captured as given, query and hash included.
 - Sizes: `desktop` 1920x1080, `laptop` 1440x900, `tablet` 768x1024, `phone` 440x956, or `WIDTHxHEIGHT`. Full page by default; `--viewport` for the visible part only.
 - Files are `<dir>/<page>-<WIDTH>x<HEIGHT>-<kind>.png`. The page is named after its path (`/` is `index`), and kind is `before`, `after`, `diff`, `pair` (before and after, labelled) or `triple` (before, diff and after). For a PR, attach the `-pair.png`, or `-before` and `-after` side by side in a table.
 - `--json` prints to stdout, per page and size: `files` (absolute image paths), `changed` and `total` pixels, and each side's `url`, `status` and `error`.
